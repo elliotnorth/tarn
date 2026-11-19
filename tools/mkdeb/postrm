@@ -1,0 +1,14 @@
+#!/bin/sh
+# Remove keeps tarn's state: the certificate, its key, the ACME account and
+# the config. Purge deletes them. The tarn user stays either way, as Debian
+# leaves system users so that no later user gets their uid.
+set -e
+
+if [ "$1" = purge ]; then
+	rm -rf /var/lib/tarn /var/lib/private/tarn
+fi
+if [ "$1" = remove ] || [ "$1" = purge ]; then
+	if [ -d /run/systemd/system ]; then
+		systemctl daemon-reload || true
+	fi
+fi

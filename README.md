@@ -53,6 +53,16 @@ From a release, verified against tarn's signing key:
 curl -fsSL https://github.com/elliotnorth/tarn/releases/latest/download/install.sh | sudo sh
 ```
 
+Or, on Debian or Ubuntu, the `.deb` from the same release, checked against
+`SHA256SUMS` (`armhf` for 32-bit Raspberry Pi OS). It runs tarn as a `tarn` system
+user, puts the binary in `/usr/bin` (use that path in the `ExecStart` lines below),
+and keeps state in `/var/lib/tarn`. It ships no config or secrets and doesn't start
+tarn until you've set a zone:
+
+```sh
+sudo apt install ./tarn_0.4.1_amd64.deb
+```
+
 Or build it yourself, with Go 1.27 or newer:
 
 ```sh
@@ -283,6 +293,9 @@ Restoring keeps the certificate, so it doesn't count against Let's Encrypt's lim
 cd tarn && git pull && go build -o tarn . && sudo install tarn /usr/local/bin/tarn && sudo systemctl restart tarn
 sudo systemctl disable --now tarn && sudo rm -r /etc/systemd/system/tarn.service* /usr/local/bin/tarn   # remove
 ```
+
+With the `.deb`: `sudo apt remove tarn` keeps the certificate and config, and
+`sudo apt purge tarn` deletes them.
 
 If you remove it, delete the nameserver from your tailnet too.
 

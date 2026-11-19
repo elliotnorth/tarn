@@ -30,11 +30,21 @@ jobs:
           build arm 7 armv7
           cp deploy/install.sh deploy/tarn.service dist/
 
+      - name: Debian packages
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          go run ./tools/mkdeb -bin dist/tarn-linux-amd64 -arch amd64 -version "${GITHUB_REF_NAME}" -o dist
+          go run ./tools/mkdeb -bin dist/tarn-linux-arm64 -arch arm64 -version "${GITHUB_REF_NAME}" -o dist
+          go run ./tools/mkdeb -bin dist/tarn-linux-armv7 -arch armhf -version "${GITHUB_REF_NAME}" -o dist
+          sudo dpkg -i dist/tarn_*_amd64.deb
+          /usr/bin/tarn -version | grep -F "${GITHUB_REF_NAME}"
+          sudo dpkg --purge tarn
+
       - name: Checksums and signature
         env:
           TARN_RELEASE_KEY: ${{ secrets.TARN_RELEASE_KEY }}
         run: |
-          (cd dist && sha256sum tarn-linux-* install.sh tarn.service > SHA256SUMS)
+          (cd dist && sha256sum tarn-linux-* tarn_*.deb install.sh tarn.service > SHA256SUMS)
           go run ./tools/signsums -sign dist/SHA256SUMS
 
       - name: Check the installer against this release

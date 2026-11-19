@@ -42,3 +42,17 @@ jobs:
 
       - name: go build
         run: go build -o tarn .
+
+      - name: .deb installs, upgrades and purges cleanly
+        run: |
+          CGO_ENABLED=0 go build -trimpath -o tarn-linux-amd64 .
+          deb=$(go run ./tools/mkdeb -bin tarn-linux-amd64 -arch amd64 -version v0.0.0-ci)
+          sudo dpkg -i "$deb"
+          getent passwd tarn
+          /usr/bin/tarn -version
+          systemd-analyze verify /usr/lib/systemd/system/tarn.service
+          if systemctl is-active --quiet tarn; then echo "started without a zone"; exit 1; fi
+          sudo dpkg -i "$deb"
+          sudo dpkg --purge tarn
+          test ! -e /usr/bin/tarn
+          test ! -e /usr/lib/systemd/system/tarn.service

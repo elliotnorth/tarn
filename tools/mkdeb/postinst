@@ -1,0 +1,23 @@
+#!/bin/sh
+# tarn's .deb holds no secrets and no config, so a fresh install creates the
+# user and stops there: tarn needs a zone before it can start.
+set -e
+
+if [ "$1" = configure ]; then
+	systemd-sysusers tarn.conf
+	if [ -d /run/systemd/system ]; then
+		systemctl daemon-reload
+		# Upgrades restart a running tarn onto the new binary.
+		if [ -n "$2" ]; then
+			systemctl try-restart tarn.service || true
+		fi
+	fi
+	if [ -z "$2" ]; then
+		echo "tarn is installed but not started: it needs your zone first."
+		echo "Follow the README's setup, using /usr/bin/tarn in ExecStart lines, then:"
+		echo "  sudo systemctl enable --now tarn && sudo tarn doctor"
+		if [ -e /etc/systemd/system/tarn.service ]; then
+			echo "Note: /etc/systemd/system/tarn.service exists and is used instead of the packaged unit."
+		fi
+	fi
+fi

@@ -3,7 +3,7 @@ module github.com/elliotnorth/Tarn
 go 1.27.0
 
 require (
-	codeberg.org/miekg/dns v0.6.130
+	codeberg.org/miekg/dns v0.6.133
 	github.com/aws/aws-sdk-go-v2 v1.47.8
 	github.com/go-acme/lego/v5 v5.6.0
 	golang.org/x/crypto v0.58.0

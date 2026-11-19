@@ -89,8 +89,8 @@ sudo cp /etc/tarn-services /var/lib/private/tarn/services
 ```
 
 In `https.conf` (from [step 4](docs/ADVANCED.md#4-get-a-certificate)), add
-`LoadCredential=admin:/etc/tarn/admin-password`, and change `ExecStart` to use `-services-file /var/lib/tarn/services -admin-password-file
-${CREDENTIALS_DIRECTORY}/admin`. Changes apply at once, with no restart.
+`LoadCredential=admin:/etc/tarn/admin-password`, and change `ExecStart` to use
+`-services-file /var/lib/tarn/services -admin-password-file ${CREDENTIALS_DIRECTORY}/admin`. Changes apply at once, with no restart.
 
 - **That password can repoint any service name on your tailnet.** Use a strong one.
 - Saving from the page rewrites the file, so comments in it are lost.

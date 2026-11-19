@@ -50,14 +50,14 @@ tailnet IP from `tailscale ip -4`.
 From a release, verified against tarn's signing key:
 
 ```sh
-curl -fsSL https://github.com/elliotnorth/Tarn/releases/latest/download/install.sh | sudo sh
+curl -fsSL https://github.com/elliotnorth/tarn/releases/latest/download/install.sh | sudo sh
 ```
 
 Or build it yourself, with Go 1.27 or newer:
 
 ```sh
-git clone https://github.com/elliotnorth/Tarn.git
-cd Tarn && go build -o tarn . && sudo install tarn /usr/local/bin/tarn
+git clone https://github.com/elliotnorth/tarn.git
+cd tarn && go build -o tarn . && sudo install tarn /usr/local/bin/tarn
 ```
 
 ### 2. Run it as a service
@@ -274,7 +274,7 @@ Restoring keeps the certificate, so it doesn't count against Let's Encrypt's lim
 ### Update or remove
 
 ```sh
-cd Tarn && git pull && go build -o tarn . && sudo install tarn /usr/local/bin/tarn && sudo systemctl restart tarn
+cd tarn && git pull && go build -o tarn . && sudo install tarn /usr/local/bin/tarn && sudo systemctl restart tarn
 sudo systemctl disable --now tarn && sudo rm -r /etc/systemd/system/tarn.service* /usr/local/bin/tarn   # remove
 ```
 

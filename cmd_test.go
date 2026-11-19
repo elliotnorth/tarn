@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/doctor"
+	"github.com/elliotnorth/tarn/internal/doctor"
 )
 
 func TestWriteStatus(t *testing.T) {

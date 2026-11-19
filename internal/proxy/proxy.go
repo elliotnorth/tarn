@@ -18,7 +18,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 // Service is one line of the services file.

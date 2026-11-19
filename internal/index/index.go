@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 // Record is what tarn answers for one name.

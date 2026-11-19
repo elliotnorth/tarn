@@ -3,7 +3,7 @@
 # before installing anything, and never changes your tailnet.
 set -eu
 
-repo=https://github.com/elliotnorth/Tarn/releases
+repo=https://github.com/elliotnorth/tarn/releases
 if [ -n "${TARN_VERSION:-}" ]; then
 	base="$repo/download/$TARN_VERSION"
 else

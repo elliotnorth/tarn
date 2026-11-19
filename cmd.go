@@ -18,10 +18,10 @@ import (
 
 	"codeberg.org/miekg/dns"
 
-	"github.com/elliotnorth/Tarn/internal/certs"
-	"github.com/elliotnorth/Tarn/internal/doctor"
-	"github.com/elliotnorth/Tarn/internal/peers"
-	"github.com/elliotnorth/Tarn/internal/settings"
+	"github.com/elliotnorth/tarn/internal/certs"
+	"github.com/elliotnorth/tarn/internal/doctor"
+	"github.com/elliotnorth/tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/settings"
 )
 
 type cliOptions struct {

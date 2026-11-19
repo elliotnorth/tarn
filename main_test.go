@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/index"
-	"github.com/elliotnorth/Tarn/internal/peers"
-	"github.com/elliotnorth/Tarn/internal/proxy"
+	"github.com/elliotnorth/tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/proxy"
 )
 
 // scriptSource returns its results in order, then repeats the last one.

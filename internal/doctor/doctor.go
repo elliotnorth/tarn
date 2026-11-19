@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 // Level is a check's result.

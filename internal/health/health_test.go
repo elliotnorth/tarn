@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/index"
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 func get(t *testing.T, h http.Handler, path, token string) (*httptest.ResponseRecorder, map[string]any) {

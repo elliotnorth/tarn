@@ -9,7 +9,7 @@ import (
 	"codeberg.org/miekg/dns/dnsutil"
 	"codeberg.org/miekg/dns/rdata"
 
-	"github.com/elliotnorth/Tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/index"
 )
 
 // ednsSize is the UDP payload size tarn advertises when the client uses EDNS.

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 func addr(s string) netip.Addr { return netip.MustParseAddr(s) }

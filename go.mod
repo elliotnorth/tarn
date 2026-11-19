@@ -1,4 +1,4 @@
-module github.com/elliotnorth/Tarn
+module github.com/elliotnorth/tarn
 
 go 1.27.0
 

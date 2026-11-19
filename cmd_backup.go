@@ -13,8 +13,8 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/backup"
-	"github.com/elliotnorth/Tarn/internal/settings"
+	"github.com/elliotnorth/tarn/internal/backup"
+	"github.com/elliotnorth/tarn/internal/settings"
 )
 
 // servicesFlag finds -services-file in the systemd unit, where the README's

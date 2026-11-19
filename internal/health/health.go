@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/index"
 )
 
 //go:embed ui.html

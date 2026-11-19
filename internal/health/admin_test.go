@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/index"
 )
 
 const pw = "correct horse battery"

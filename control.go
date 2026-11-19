@@ -21,13 +21,13 @@ import (
 	"codeberg.org/miekg/dns"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/elliotnorth/Tarn/internal/certs"
-	"github.com/elliotnorth/Tarn/internal/dnsserver"
-	"github.com/elliotnorth/Tarn/internal/health"
-	"github.com/elliotnorth/Tarn/internal/index"
-	"github.com/elliotnorth/Tarn/internal/peers"
-	"github.com/elliotnorth/Tarn/internal/proxy"
-	"github.com/elliotnorth/Tarn/internal/settings"
+	"github.com/elliotnorth/tarn/internal/certs"
+	"github.com/elliotnorth/tarn/internal/dnsserver"
+	"github.com/elliotnorth/tarn/internal/health"
+	"github.com/elliotnorth/tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/proxy"
+	"github.com/elliotnorth/tarn/internal/settings"
 )
 
 const (

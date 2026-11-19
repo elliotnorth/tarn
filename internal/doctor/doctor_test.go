@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 var now = time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)

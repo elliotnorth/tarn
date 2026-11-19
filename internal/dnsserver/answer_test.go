@@ -11,8 +11,8 @@ import (
 
 	"codeberg.org/miekg/dns"
 
-	"github.com/elliotnorth/Tarn/internal/index"
-	"github.com/elliotnorth/Tarn/internal/peers"
+	"github.com/elliotnorth/tarn/internal/index"
+	"github.com/elliotnorth/tarn/internal/peers"
 )
 
 func testIndex() *index.Index {

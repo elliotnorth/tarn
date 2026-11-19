@@ -33,6 +33,19 @@ func TestBuildServices(t *testing.T) {
 		t.Errorf("laptop = %+v", r)
 	}
 
+	// The hidden nextcloud device is reported, with addresses people can read.
+	if len(idx.Collisions) != 1 {
+		t.Fatalf("Collisions = %+v", idx.Collisions)
+	}
+	if c := idx.Collisions[0]; c.Name != "nextcloud" || !c.Service || c.Winner != "service" || c.KeptIP != "100.64.0.1" ||
+		len(c.Losers) != 1 || c.Losers[0] != "n2" || len(c.DroppedIP) != 1 || c.DroppedIP[0] != "100.64.0.2" {
+		t.Errorf("service collision = %+v", c)
+	}
+	// tarn's own machine sharing a service's name is not a clash.
+	if own := Build(st, time.Now(), "tarn"); len(own.Collisions) != 0 {
+		t.Errorf("Collisions with a service named after this machine = %+v", own.Collisions)
+	}
+
 	// With no Self address to point at, a same-named device keeps its name.
 	noSelf := Build(&peers.Status{Peers: st.Peers}, time.Now(), "nextcloud", "vault")
 	if r, ok := noSelf.Lookup("nextcloud"); !ok || r.Service {
@@ -83,6 +96,9 @@ func TestCollisionsAreDeterministic(t *testing.T) {
 	}
 	if len(a.Collisions) != 1 || len(a.Collisions[0].Losers) != 2 {
 		t.Fatalf("Collisions = %+v", a.Collisions)
+	}
+	if c := a.Collisions[0]; c.KeptIP != "100.64.0.2" || len(c.DroppedIP) != 2 || c.Service {
+		t.Errorf("addresses = %+v", c)
 	}
 }
 

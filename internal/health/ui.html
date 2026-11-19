@@ -207,6 +207,8 @@ function machines() {
   if (state.locked) return out.concat(loginForm());
   const search = h("input", { type: "search", placeholder: "Search by name or address", "aria-label": "Search machines", value: state.filter, id: "q" });
   search.addEventListener("input", () => { state.filter = search.value; render(true); });
+  const clashes = (state.health && state.health.collisions) || [];
+  if (clashes.length) out.push(h("div", { class: "alert warn", role: "status" }, h("b", null, "Name clashes"), clashes.map(c => h("div", null, clashText(c)))));
   out.push(h("div", { class: "bar" }, search));
   const zone = (state.health && state.health.zone) || "";
   const q = state.filter.toLowerCase();
@@ -219,6 +221,12 @@ function machines() {
     h("td", { class: "nowrap" }, h("span", { class: "dot " + (r.online ? "good" : "") }), r.online ? "Connected" : "Offline")
   )), q ? "No machines match that search." : "No machines yet.")));
   return out;
+}
+function clashText(c) {
+  const dropped = (c.dropped_ip && c.dropped_ip.length ? c.dropped_ip : c.losers).join(", ");
+  return c.service
+    ? c.name + " is a service, so the device at " + dropped + " can't be reached by that name. Rename the device in Tailscale or the service here."
+    : c.name + " goes to " + (c.kept_ip || c.winner) + ". Also named " + c.name + ", and not reachable by it: " + dropped + ". Rename one in Tailscale.";
 }
 function signInForm() {
   const input = h("input", { type: "password", placeholder: "Password", "aria-label": "Password", autocomplete: "current-password", required: "required" });
@@ -356,7 +364,7 @@ function dns() {
   out.push(details([["Zone", s.zone || ""], ["Names served", String(s.records || 0)], ["Device list read", ago(s.last_refresh)], ["Failed reads in a row", String(s.consecutive_failures || 0)]]));
   if (s.last_error) out.push(h("div", { class: "alert", style: "margin-top:16px" }, s.last_error));
   if (s.collisions && s.collisions.length) {
-    out.push(h("h2", null, "Name collisions"), table([["Name"], ["Kept"], ["Dropped"]], s.collisions.map(c => h("tr", null, h("td", null, c.name), h("td", { class: "mono" }, c.winner), h("td", { class: "mono" }, c.losers.join(", ")))), ""));
+    out.push(h("h2", null, "Name collisions"), table([["Name"], ["Kept"], ["Dropped"]], s.collisions.map(c => h("tr", null, h("td", null, c.name), h("td", { class: "mono" }, c.service ? "service" : (c.kept_ip || c.winner)), h("td", { class: "mono" }, (c.dropped_ip && c.dropped_ip.length ? c.dropped_ip : c.losers).join(", ")))), ""));
   }
   if (s.skipped && s.skipped.length) {
     out.push(h("h2", null, "Skipped devices"), h("div", { class: "card rows" }, s.skipped.map(x => h("div", { class: "row" }, h("span", null, x)))));

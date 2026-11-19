@@ -27,9 +27,12 @@ type Record struct {
 
 // Collision records a name claimed by more than one node.
 type Collision struct {
-	Name   string   `json:"name"`
-	Winner string   `json:"winner"` // node ID that got the name
-	Losers []string `json:"losers"` // node IDs that were dropped
+	Name      string   `json:"name"`
+	Winner    string   `json:"winner"`               // node ID that got the name, or "service"
+	Losers    []string `json:"losers"`               // node IDs that were dropped
+	KeptIP    string   `json:"kept_ip,omitempty"`    // the winner's first address, for people
+	DroppedIP []string `json:"dropped_ip,omitempty"` // each loser's first address, in Losers order
+	Service   bool     `json:"service,omitempty"`    // a service took the name from these devices
 }
 
 // Index is an immutable snapshot of records.
@@ -63,9 +66,14 @@ func Build(st *peers.Status, now time.Time, services ...string) *Index {
 	}
 
 	groups := map[string][]peers.Peer{}
+	shadowed := map[string][]peers.Peer{} // devices that lost their name to a service
 	for _, p := range st.Peers {
 		name := strings.ToLower(p.Name)
-		if !isService[name] {
+		if isService[name] {
+			if !p.Self {
+				shadowed[name] = append(shadowed[name], p)
+			}
+		} else {
 			groups[name] = append(groups[name], p)
 		}
 	}
@@ -84,15 +92,23 @@ func Build(st *peers.Status, now time.Time, services ...string) *Index {
 		if isService[name] {
 			idx.byName[name] = len(idx.records)
 			idx.records = append(idx.records, Record{Name: name, IPv4: proxyIPs, Online: true, Service: true, ID: "service"})
+			if g := shadowed[name]; len(g) > 0 {
+				sort.Slice(g, func(i, j int) bool { return g[i].ID < g[j].ID })
+				c := Collision{Name: name, Winner: "service", KeptIP: firstIP(proxyIPs), Service: true}
+				for _, l := range g {
+					c.Losers, c.DroppedIP = append(c.Losers, l.ID), append(c.DroppedIP, firstIP(l.IPv4, l.IPv6))
+				}
+				idx.Collisions = append(idx.Collisions, c)
+			}
 			continue
 		}
 		g := groups[name]
 		sort.Slice(g, func(i, j int) bool { return g[i].ID < g[j].ID })
 		w := g[0]
 		if len(g) > 1 {
-			c := Collision{Name: name, Winner: w.ID}
+			c := Collision{Name: name, Winner: w.ID, KeptIP: firstIP(w.IPv4, w.IPv6)}
 			for _, l := range g[1:] {
-				c.Losers = append(c.Losers, l.ID)
+				c.Losers, c.DroppedIP = append(c.Losers, l.ID), append(c.DroppedIP, firstIP(l.IPv4, l.IPv6))
 			}
 			idx.Collisions = append(idx.Collisions, c)
 		}
@@ -102,6 +118,16 @@ func Build(st *peers.Status, now time.Time, services ...string) *Index {
 		})
 	}
 	return idx
+}
+
+// firstIP is the first address in the lists, or "".
+func firstIP(lists ...[]netip.Addr) string {
+	for _, l := range lists {
+		if len(l) > 0 {
+			return l[0].String()
+		}
+	}
+	return ""
 }
 
 // Lookup finds a record by name, case-insensitively.

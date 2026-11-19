@@ -40,7 +40,8 @@ type Health struct {
 	LastError   string            `json:"last_error"`
 	DNS         map[string]uint64 `json:"dns"`
 	Collisions  []struct {
-		Name string `json:"name"`
+		Name    string `json:"name"`
+		Service bool   `json:"service"`
 	} `json:"collisions"`
 	Skipped []string  `json:"skipped"`
 	TLS     *TLSState `json:"tls"`

@@ -87,6 +87,7 @@ type Status struct {
 	NextCheck        *time.Time `json:"next_check,omitempty"`
 	LastError        string     `json:"last_error,omitempty"`
 	ConsecutiveFails int        `json:"consecutive_failures"`
+	IssuedThisWeek   int        `json:"issued_this_week"` // from the ledger, against Let's Encrypt's 5 a week
 }
 
 // New returns a Manager. Staging and production keep separate accounts and
@@ -117,8 +118,10 @@ func New(cfg Config) *Manager {
 // Status returns a copy of the current certificate state.
 func (m *Manager) Status() Status {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.status
+	s := m.status
+	m.mu.Unlock()
+	s.IssuedThisWeek = m.IssuedThisWeek(m.now())
+	return s
 }
 
 // Run keeps the certificate fresh until ctx ends. New certificates take effect

@@ -34,6 +34,10 @@ func TestIssueLimitPerWeek(t *testing.T) {
 	if got := m.IssuedThisWeek(t0.Add(24 * time.Hour)); got != maxIssuedPerWeek {
 		t.Errorf("IssuedThisWeek = %d", got)
 	}
+	m.now = func() time.Time { return t0.Add(24 * time.Hour) }
+	if got := m.Status().IssuedThisWeek; got != maxIssuedPerWeek {
+		t.Errorf("Status().IssuedThisWeek = %d, for the status page", got)
+	}
 	// The limit is a sliding window.
 	if _, issued, err := m.Ensure(context.Background(), t0.Add(8*24*time.Hour)); err != nil || !issued {
 		t.Errorf("a week later: issued=%v err=%v", issued, err)

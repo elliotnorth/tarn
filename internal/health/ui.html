@@ -395,6 +395,8 @@ function certificate() {
     ["Renewed by itself", t.last_renewed ? fmt(t.last_renewed) : "Not yet"],
     ["Last issued", t.last_issued ? fmt(t.last_issued) : "Not since tarn started"],
     ["Failed attempts in a row", String(t.consecutive_failures || 0)],
+    ["Issued in the last 7 days", t.staging ? String(t.issued_this_week || 0) + " (staging limits are higher)"
+      : (t.issued_this_week || 0) + " of Let's Encrypt's 5 a week. tarn stops at 4"],
   ]));
   return out;
 }

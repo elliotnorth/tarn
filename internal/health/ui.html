@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tarn</title>
+<style>
+:root {
+  --bg: #faf9f8; --panel: #fff; --text: #1f1e1d; --muted: #706e6b; --line: #e7e5e2;
+  --hover: #f4f3f1; --accent: #3b5bdb; --good: #2b8a3e; --warn: #c2700a; --bad: #c92a2a;
+  --badge: #efedea; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181a; --panel: #212124; --text: #ececea; --muted: #a09e9a; --line: #333336;
+    --hover: #2a2a2d; --accent: #8ea6ff; --good: #5cc26f; --warn: #e6a14a; --bad: #ff7b7b;
+    --badge: #333336; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+header { background: var(--panel); border-bottom: 1px solid var(--line); }
+.top { display: flex; align-items: center; gap: 12px; padding-top: 14px; }
+.brand { font-weight: 700; font-size: 17px; letter-spacing: -.02em; }
+.zone { color: var(--muted); overflow-wrap: anywhere; }
+.pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+nav { display: flex; gap: 20px; margin-top: 8px; overflow-x: auto; }
+nav a { padding: 10px 0; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; font-weight: 500; white-space: nowrap; }
+nav a:hover { color: var(--text); }
+nav a[aria-current=page] { color: var(--text); border-bottom-color: var(--text); }
+main { padding: 24px 0 48px; }
+h1 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 18px; }
+.bar { margin-bottom: 14px; }
+input { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; width: 100%; max-width: 320px; }
+input:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button { font: inherit; color: #fff; background: var(--accent); border: 0; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--hover); }
+.name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; }
+.badge { font-size: 11px; font-weight: 500; padding: 1px 6px; border-radius: 4px; background: var(--badge); color: var(--muted); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; }
+.dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.nowrap { white-space: nowrap; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.stat b { display: block; font-size: 22px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.rows { padding: 2px 16px; }
+.row { display: flex; gap: 16px; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row span:first-child { color: var(--muted); flex: none; }
+.row span:last-child { text-align: right; overflow-wrap: anywhere; }
+h2 { font-size: 15px; margin: 22px 0 8px; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.alert { border: 1px solid var(--bad); color: var(--bad); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; overflow-wrap: anywhere; }
+.alert.warn { border-color: var(--warn); color: var(--warn); }
+code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; }
+form.login { display: flex; flex-wrap: wrap; gap: 8px; }
+button.ghost { color: var(--text); background: transparent; border: 1px solid var(--line); }
+button.danger { background: var(--bad); }
+button:disabled { opacity: .6; cursor: default; }
+.tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; align-items: center; }
+.actions button { padding: 4px 10px; font-size: 13px; }
+.edit { padding: 16px; margin-bottom: 14px; }
+.edit h2 { margin: 0 0 12px; }
+.edit label { display: block; font-weight: 500; margin-bottom: 12px; }
+.edit input { display: block; margin-top: 4px; max-width: 480px; font-weight: 400; }
+.edit input[readonly] { color: var(--muted); }
+.edit label.check { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.edit label.check input { display: inline-block; width: auto; margin: 0; }
+.edit label.check .help { flex-basis: 100%; margin-top: 0; }
+.help { color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 4px; }
+.err { color: var(--bad); margin: 0 0 12px; overflow-wrap: anywhere; }
+.signin { padding: 16px; margin-bottom: 14px; }
+.signin p { margin: 0 0 10px; }
+.banner { border: 1px solid var(--warn); background: var(--panel); border-radius: 8px; padding: 14px 16px; margin-top: 16px; }
+.banner b { display: block; margin-bottom: 4px; }
+.banner .actions { justify-content: flex-start; margin-top: 10px; flex-wrap: wrap; }
+.banner input { max-width: 260px; }
+.notes { margin: 8px 0 12px; padding-left: 18px; }
+.notes li { margin-bottom: 4px; }
+.token { display: block; padding: 10px; background: var(--badge); border-radius: 6px; overflow-wrap: anywhere; margin: 8px 0; user-select: all; }
+.setting { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.setting:last-child { border-bottom: 0; }
+.setting .val { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+select { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; display: block; margin-top: 4px; }
+footer { color: var(--muted); font-size: 12px; padding-bottom: 24px; }
+@media (max-width: 640px) { .hide-sm { display: none; } td, th { padding-left: 12px; padding-right: 12px; } }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="top">
+    <span class="brand">tarn</span><span class="zone" id="zone"></span>
+    <span class="pill" id="pill" role="status"><span class="dot"></span>Loading</span>
+  </div>
+  <nav aria-label="Sections">
+    <a href="#machines">Machines</a><a href="#services">Services</a><a href="#dns">DNS</a><a href="#certificate">Certificate</a><a href="#settings">Settings</a><a href="#history">History</a>
+  </nav>
+</div></header>
+<div class="wrap"><div id="banner"></div><main id="main"></main><footer id="foot"></footer></div>
+<script>
+"use strict";
+// Everything from the server goes in through textContent, never innerHTML:
+// device names come from the tailnet.
+const $ = id => document.getElementById(id);
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined) e.append(k);
+  return e;
+}
+const state = { session: null, health: null, records: null, services: null, error: "", locked: false, filter: "", settings: null, history: null, edit: null, preview: null, shownToken: "", message: "", keepError: "", form: null, confirm: "", notice: "", authError: "" };
+let token = "";
+try { token = sessionStorage.getItem("tarn-token") || ""; } catch (e) {}
+
+async function api(path) {
+  const r = await fetch(path, { headers: token ? { Authorization: "Bearer " + token } : {}, cache: "no-store" });
+  if (r.status === 401) { const e = new Error("locked"); e.locked = true; throw e; }
+  return r.json(); // /healthz is still JSON when it answers 503
+}
+// Changes carry a header that other sites can't send, which is what blocks
+// forged requests. The session itself is an HttpOnly cookie.
+async function send(method, path, body) {
+  const r = await fetch(path, {
+    method, credentials: "same-origin",
+    headers: { "X-Tarn-Request": "1", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "That didn't work. Try again.");
+  return j;
+}
+async function load(force) {
+  try {
+    state.session = await api("/session");
+    state.error = "";
+    try {
+      state.health = await api("/healthz");
+      [state.records, state.services] = await Promise.all([api("/records"), api("/services")]);
+      state.locked = false;
+      const sess = state.session;
+      if (sess.signed_in && sess.control) {
+        [state.settings, state.history] = await Promise.all([send("GET", "/settings"), send("GET", "/history")]);
+      } else {
+        state.settings = state.history = null;
+      }
+    } catch (e) {
+      if (!e.locked) throw e;
+      state.locked = true;
+      state.health = state.records = state.services = null;
+    }
+  } catch (e) {
+    state.error = "Can't reach tarn. Showing the last data it sent.";
+  }
+  render(false, force);
+}
+const fmt = t => t ? new Date(t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Never";
+function ago(t) {
+  if (!t) return "Never";
+  const s = Math.max(0, Math.round((Date.now() - new Date(t)) / 1000));
+  return s < 60 ? s + "s ago" : s < 3600 ? Math.round(s / 60) + "m ago" : Math.round(s / 3600) + "h ago";
+}
+const daysLeft = t => Math.floor((new Date(t) - Date.now()) / 86400000);
+const page = () => { const p = location.hash.slice(1); return ["machines", "services", "dns", "certificate", "settings", "history"].includes(p) ? p : "machines"; };
+
+function head(title, sub) { return [h("h1", null, title), h("p", { class: "sub" }, sub)]; }
+function table(cols, rows, empty) {
+  if (!rows.length) return h("div", { class: "card" }, h("div", { class: "empty" }, empty));
+  return h("div", { class: "card" }, h("table", null,
+    h("thead", null, h("tr", null, cols.map(c => h("th", c[1] ? { class: c[1], scope: "col" } : { scope: "col" }, c[0])))),
+    h("tbody", null, rows)));
+}
+function details(pairs) {
+  return h("div", { class: "card rows" }, pairs.map(([k, v]) => h("div", { class: "row" }, h("span", null, k), h("span", null, v))));
+}
+// Everything needs sign-in when the page is reached through the proxy.
+function gate() {
+  const sess = state.session || {};
+  return sess.editable && !sess.signed_in ? signInForm() : loginForm();
+}
+function loginForm() {
+  const input = h("input", { type: "password", placeholder: "Token", "aria-label": "Token", autocomplete: "off" });
+  const form = h("form", { class: "login" }, input, h("button", { type: "submit" }, "Unlock"));
+  form.addEventListener("submit", ev => {
+    ev.preventDefault();
+    token = input.value.trim();
+    try { sessionStorage.setItem("tarn-token", token); } catch (e) {}
+    load();
+  });
+  return h("div", { class: "card" }, h("div", { class: "empty" },
+    h("p", null, "Enter the records token, or open this page on the machine itself."), form));
+}
+function machines() {
+  const out = head("Machines", "Every device tarn answers for.");
+  if (state.locked) return out.concat(loginForm());
+  const search = h("input", { type: "search", placeholder: "Search by name or address", "aria-label": "Search machines", value: state.filter, id: "q" });
+  search.addEventListener("input", () => { state.filter = search.value; render(true); });
+  out.push(h("div", { class: "bar" }, search));
+  const zone = (state.health && state.health.zone) || "";
+  const q = state.filter.toLowerCase();
+  const list = (state.records || []).filter(r => !r.service &&
+    (r.name + " " + (r.ipv4 || []).join(" ") + " " + (r.ipv6 || []).join(" ")).toLowerCase().includes(q));
+  out.push(h("div", { id: "list" }, table([["Machine"], ["Addresses"], ["Status"]], list.map(r => h("tr", null,
+    h("td", null, h("div", { class: "name" }, r.name, r.self ? h("span", { class: "badge" }, "This machine") : null),
+      h("div", { class: "small" }, zone ? r.name + "." + zone : "")),
+    h("td", null, h("div", { class: "mono" }, (r.ipv4 || []).join(", ")), h("div", { class: "small mono hide-sm" }, (r.ipv6 || []).join(", "))),
+    h("td", { class: "nowrap" }, h("span", { class: "dot " + (r.online ? "good" : "") }), r.online ? "Connected" : "Offline")
+  )), q ? "No machines match that search." : "No machines yet.")));
+  return out;
+}
+function signInForm() {
+  const input = h("input", { type: "password", placeholder: "Password", "aria-label": "Password", autocomplete: "current-password", required: "required" });
+  const form = h("form", { class: "login" }, input, h("button", { type: "submit" }, "Sign in"));
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    try {
+      await send("POST", "/login", { password: input.value });
+      state.authError = "";
+      await load(true);
+    } catch (e) {
+      state.authError = e.message;
+      render(false, true);
+    }
+  });
+  return h("div", { class: "card signin" },
+    h("p", null, "Sign in to add, change or remove services."),
+    state.authError ? h("p", { class: "err", role: "alert" }, state.authError) : null, form);
+}
+function serviceForm() {
+  const f = state.form, zone = (state.health && state.health.zone) || "";
+  const name = h("input", { value: f.name, required: "required", autocomplete: "off", spellcheck: "false", placeholder: "nextcloud" });
+  if (f.edit) name.setAttribute("readonly", "readonly");
+  const upstream = h("input", { value: f.upstream, required: "required", autocomplete: "off", spellcheck: "false", placeholder: "https://nextcloud.tail1234.ts.net" });
+  const preserve = h("input", { type: "checkbox" });
+  if (f.preserve) preserve.setAttribute("checked", "checked");
+  const save = h("button", { type: "submit" }, f.edit ? "Save" : "Add service");
+  const cancel = h("button", { type: "button", class: "ghost" }, "Cancel");
+  cancel.addEventListener("click", () => { state.form = null; render(false, true); });
+  const form = h("form", { class: "card edit" },
+    h("h2", null, f.edit ? "Change " + f.name : "Add a service"),
+    f.error ? h("p", { class: "err", role: "alert" }, f.error) : null,
+    h("label", null, "Name", name, h("div", { class: "help" }, f.edit ? "" : "It will be at <name>." + zone + ". A device with the same name loses that name.")),
+    h("label", null, "Forwards to", upstream, h("div", { class: "help" }, "The address tarn sends traffic to: a ts.net address or an IP and port.")),
+    h("label", { class: "check" }, preserve, "Preserve host", h("div", { class: "help" }, "Forward requests byte for byte. Only for apps that hand out signed links, such as S3, MinIO or Ente.")),
+    h("div", { class: "actions", style: "justify-content:flex-start" }, save, cancel));
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    f.name = name.value.trim().toLowerCase();
+    f.upstream = upstream.value.trim();
+    f.preserve = preserve.checked;
+    save.disabled = true;
+    try {
+      await send("PUT", "/services/" + encodeURIComponent(f.name), { upstream: f.upstream, preserve_host: f.preserve });
+      state.form = null;
+      state.notice = "";
+      await load(true);
+    } catch (e) {
+      f.error = e.message;
+      render(false, true);
+    }
+  });
+  return form;
+}
+function button(label, cls, fn) {
+  const b = h("button", { type: "button", class: cls }, label);
+  b.addEventListener("click", fn);
+  return b;
+}
+async function removeService(name) {
+  try {
+    await send("DELETE", "/services/" + encodeURIComponent(name));
+    state.notice = "";
+  } catch (e) {
+    state.notice = e.message;
+  }
+  state.confirm = "";
+  await load(true);
+}
+function serviceActions(s) {
+  if (state.confirm === s.name) {
+    return h("div", { class: "actions" }, h("span", { class: "small" }, "Remove?"),
+      button("Remove", "danger", () => removeService(s.name)),
+      button("Keep", "ghost", () => { state.confirm = ""; render(false, true); }));
+  }
+  return h("div", { class: "actions" },
+    button("Change", "ghost", () => { state.confirm = ""; state.form = { edit: true, name: s.name, upstream: s.upstream, preserve: !!s.preserve_host, error: "" }; render(false, true); }),
+    button("Remove", "ghost", () => { state.form = null; state.confirm = s.name; render(false, true); }));
+}
+function services() {
+  const out = head("Services", "Names tarn serves over HTTPS.");
+  const sess = state.session || {}, canEdit = sess.editable && sess.signed_in;
+  if (state.notice) out.push(h("div", { class: "alert", role: "alert" }, state.notice));
+  if (sess.editable && !sess.signed_in) {
+    out.push(signInForm());
+    if (state.locked) return out;
+  } else if (state.locked) {
+    return out.concat(loginForm());
+  }
+  if (canEdit) {
+    out.push(h("div", { class: "tools" },
+      button("Add service", "", () => { state.confirm = ""; state.form = { edit: false, name: "", upstream: "", preserve: false, error: "" }; render(false, true); }),
+      button("Sign out", "ghost", async () => { await send("POST", "/logout").catch(() => {}); state.form = null; state.confirm = ""; await load(true); })));
+    if (state.form) out.push(serviceForm());
+  }
+  const zone = (state.health && state.health.zone) || "";
+  const cols = [["Service"], ["Address"], ["Forwards to", "hide-sm"]];
+  if (canEdit) cols.push([""]);
+  const empty = canEdit ? "No services yet. Add your first one." : h("span", null, "No services. Add lines to the file set with ", h("code", null, "-services-file"), ".");
+  out.push(table(cols, (state.services || []).map(s => h("tr", null,
+    h("td", null, h("div", { class: "name" }, s.name, s.preserve_host ? h("span", { class: "badge" }, "Preserve host") : null)),
+    h("td", null, h("a", { href: "https://" + s.name + "." + zone, rel: "noreferrer" }, s.name + "." + zone)),
+    h("td", { class: "small mono hide-sm" }, s.upstream),
+    canEdit ? h("td", null, serviceActions(s)) : null
+  )), empty));
+  return out;
+}
+function dns() {
+  const s = state.health || {}, c = s.dns || {};
+  const out = head("DNS", "Queries answered since tarn last started.");
+  const stat = (label, n) => h("div", { class: "stat" }, h("b", null, (n || 0).toLocaleString()), h("span", { class: "small" }, label));
+  out.push(h("div", { class: "stats" }, stat("Answered", (c.answered || 0) + (c.no_data || 0)), stat("Unknown names", c.nxdomain), stat("Refused", c.refused), stat("Failed", (c.servfail || 0) + (c.not_implemented || 0))));
+  out.push(details([["Zone", s.zone || ""], ["Names served", String(s.records || 0)], ["Device list read", ago(s.last_refresh)], ["Failed reads in a row", String(s.consecutive_failures || 0)]]));
+  if (s.last_error) out.push(h("div", { class: "alert", style: "margin-top:16px" }, s.last_error));
+  if (s.collisions && s.collisions.length) {
+    out.push(h("h2", null, "Name collisions"), table([["Name"], ["Kept"], ["Dropped"]], s.collisions.map(c => h("tr", null, h("td", null, c.name), h("td", { class: "mono" }, c.winner), h("td", { class: "mono" }, c.losers.join(", ")))), ""));
+  }
+  if (s.skipped && s.skipped.length) {
+    out.push(h("h2", null, "Skipped devices"), h("div", { class: "card rows" }, s.skipped.map(x => h("div", { class: "row" }, h("span", null, x)))));
+  }
+  return out;
+}
+function certificate() {
+  const t = state.health && state.health.tls;
+  const out = head("Certificate", "The wildcard certificate tarn keeps renewed.");
+  if (!t) return out.concat(h("div", { class: "card" }, h("div", { class: "empty" }, "HTTPS is off. Set -cloudflare-token-file to turn it on.")));
+  if (t.last_error) out.push(h("div", { class: "alert" }, t.last_error));
+  if (t.staging) out.push(h("div", { class: "alert warn" }, "This is a Let's Encrypt staging certificate. Browsers won't trust it."));
+  const left = t.not_after ? daysLeft(t.not_after) : null;
+  const failing = !!t.consecutive_failures;
+  const cls = left === null || left < 7 || (left < 14 && failing) ? "bad" : left < 21 || failing ? "warn" : "good";
+  if (left !== null && left < 14 && failing) {
+    out.push(h("div", { class: "alert" }, "Renewal is failing and the certificate expires in " + Math.max(left, 0) + " days. Run tarn doctor on the host to find out why."));
+  }
+  out.push(details([
+    ["Domain", t.domain],
+    ["Status", h("span", null, h("span", { class: "dot " + cls }), left === null ? "No certificate yet" : left < 0 ? "Expired" : left + " days left")],
+    ["Expires", t.not_after ? fmt(t.not_after) : "Unknown"],
+    ["Renews by", t.renew_by ? fmt(t.renew_by) + " at the latest" : "Unknown"],
+    ["Next check", t.next_check ? fmt(t.next_check) : "Not scheduled yet"],
+    ["Renewed by itself", t.last_renewed ? fmt(t.last_renewed) : "Not yet"],
+    ["Last issued", t.last_issued ? fmt(t.last_issued) : "Not since tarn started"],
+    ["Failed attempts in a row", String(t.consecutive_failures || 0)],
+  ]));
+  return out;
+}
+function certUrgent(t) {
+  return !!(t && t.consecutive_failures && t.not_after && daysLeft(t.not_after) < 14);
+}
+function pill() {
+  const s = state.health, t = s && s.tls;
+  let cls = "good", label = "Healthy";
+  if (state.locked) { cls = ""; label = "Signed out"; }
+  else if (state.error || !s) { cls = "bad"; label = "Unreachable"; }
+  else if (s.status !== "ok") { cls = "warn"; label = s.status === "stale" ? "Device list is stale" : "Starting"; }
+  else if (certUrgent(t)) { cls = "bad"; label = "Certificate expiring"; }
+  else if (t && t.consecutive_failures) { cls = "warn"; label = "Certificate problem"; }
+  $("pill").replaceChildren(h("span", { class: "dot " + cls }), label);
+}
+const SETTINGS = {
+  ttl: { label: "DNS answer lifetime", help: "Seconds devices may cache an answer. 0 to 86400.", unit: " seconds" },
+  interval: { label: "Device list refresh", help: "Seconds between reads of the device list. 5 to 3600.", unit: " seconds" },
+  source: { label: "Device list source", choices: [["cli", "tailscale command"], ["localapi", "tailscaled socket"]] },
+  acme_email: { label: "Let's Encrypt contact", help: "Optional. Sent with the next certificate request." },
+  zone: { label: "Zone", risky: true, help: "Every name moves to this subdomain." },
+  listen: { label: "DNS address", risky: true, help: "IP on this machine, with optional port. Leave empty for the tailnet IP." },
+  staging: { label: "Certificate service", risky: true, choices: [["false", "Production"], ["true", "Staging (not trusted)"]] },
+};
+const LABELS = { password: "Page password", records_token: "Records token" };
+function label(key) { return (SETTINGS[key] && SETTINGS[key].label) || LABELS[key] || key; }
+function show(key, v) {
+  if (v === "(hidden)") return "hidden";
+  const m = SETTINGS[key];
+  if (m && m.choices) { const c = m.choices.find(x => x[0] === v); if (c) return c[1]; }
+  if (key === "listen" && !v) return "Tailnet IP";
+  if (v === "" || v === undefined) return "Not set";
+  return v + ((m && m.unit) || "");
+}
+function fail(e) { state.message = e.message; render(false, true); }
+function say(text) { state.message = text; }
+function needSignIn(out) {
+  const sess = state.session || {};
+  if (!sess.editable) return out.concat(h("div", { class: "card" }, h("div", { class: "empty" }, "Editing is off. Set -admin-password-file to turn it on.")));
+  if (!sess.signed_in) return out.concat(signInForm());
+  return out.concat(h("div", { class: "card" }, h("div", { class: "empty" }, "Settings need a config file. Start tarn with -config.")));
+}
+async function afterChange(res) {
+  state.edit = state.preview = null;
+  state.message = res && res.status === "pending" ? "" : "Saved.";
+  await load(true);
+}
+async function askPreview(req, undoId) {
+  try {
+    const p = await send("POST", "/settings/preview", req);
+    state.edit = null;
+    state.preview = { req, undoId, p };
+    state.message = "";
+  } catch (e) { if (state.edit) state.edit.error = e.message; else state.message = e.message; }
+  render(false, true);
+}
+function previewCard() {
+  const { req, undoId, p } = state.preview;
+  const go = h("button", { type: "button" }, p.risky ? "Apply" : "Confirm");
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    try {
+      await afterChange(undoId ? await send("POST", "/history/" + encodeURIComponent(undoId) + "/undo") : await send("POST", "/settings", req));
+    } catch (e) { state.preview = null; fail(e); }
+  });
+  return h("div", { class: "card edit" },
+    h("h2", null, label(p.key)),
+    h("p", { style: "margin:0" }, p.summary),
+    h("ul", { class: "notes" }, (p.notes || []).map(n => h("li", null, n))),
+    h("div", { class: "actions", style: "justify-content:flex-start" }, go,
+      button("Cancel", "ghost", () => { state.preview = null; render(false, true); })));
+}
+function editCard() {
+  const e = state.edit, m = SETTINGS[e.key];
+  let input, current = null;
+  if (e.key === "password") {
+    current = h("input", { type: "password", autocomplete: "current-password", required: "required" });
+    input = h("input", { type: "password", autocomplete: "new-password", required: "required", minlength: "12", maxlength: "72" });
+  } else if (m.choices) {
+    input = h("select", null, m.choices.map(c => {
+      const o = h("option", { value: c[0] }, c[1]);
+      if (c[0] === e.value) o.setAttribute("selected", "selected");
+      return o;
+    }));
+  } else {
+    input = h("input", { value: e.value, autocomplete: "off", spellcheck: "false" });
+  }
+  const save = h("button", { type: "submit" }, e.key === "password" || (m && m.risky) ? "Review" : "Save");
+  const form = h("form", { class: "card edit" },
+    h("h2", null, "Change " + label(e.key)),
+    e.error ? h("p", { class: "err", role: "alert" }, e.error) : null,
+    current ? h("label", null, "Current password", current) : null,
+    h("label", null, e.key === "password" ? "New password (12 to 72 characters)" : "New value", input, m && m.help ? h("div", { class: "help" }, m.help) : null),
+    h("div", { class: "actions", style: "justify-content:flex-start" }, save,
+      button("Cancel", "ghost", () => { state.edit = null; render(false, true); })));
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const req = { key: e.key, value: input.value };
+    if (current) req.current_password = current.value;
+    if (e.key === "password" || (m && m.risky)) return askPreview(req);
+    save.disabled = true;
+    try {
+      await afterChange(await send("POST", "/settings", req));
+    } catch (err) { e.error = err.message; e.value = input.value; render(false, true); }
+  });
+  return form;
+}
+function settingRow(s, key) {
+  const pinned = s.pinned && s.pinned[key];
+  return h("div", { class: "setting" },
+    h("div", null, h("div", { class: "name" }, label(key), pinned ? h("span", { class: "badge" }, "Set on the command line") : null),
+      h("div", { class: "val" }, show(key, s.values[key]))),
+    pinned ? null : button("Change", "ghost", () => { state.preview = null; state.message = ""; state.edit = { key, value: s.values[key] || "", error: "" }; render(false, true); }));
+}
+function tokenRow(s) {
+  const act = async on => {
+    try {
+      const r = await send("POST", "/settings/records-token", { enabled: on });
+      state.shownToken = r.token || "";
+      state.message = on ? "" : "Records token turned off.";
+      await load(true);
+    } catch (e) { fail(e); }
+  };
+  return h("div", { class: "setting" },
+    h("div", null, h("div", { class: "name" }, "Records token", s.records_token_console ? h("span", { class: "badge" }, "Set on the command line") : null),
+      h("div", { class: "val" }, s.records_token_on || s.records_token_console ? "On" : "Off. Signed-in browsers can still read the lists.")),
+    s.records_token_console ? null : h("div", { class: "actions" },
+      button(s.records_token_on ? "Replace" : "Turn on", "ghost", () => act(true)),
+      s.records_token_on ? button("Turn off", "ghost", () => act(false)) : null));
+}
+function settingsView() {
+  const out = head("Settings", "Changes take effect right away.");
+  const s = state.settings;
+  if (!s) return needSignIn(out);
+  if (state.message) out.push(h("div", { class: "alert warn", role: "status" }, state.message));
+  if (state.shownToken) {
+    out.push(h("div", { class: "card edit" }, h("h2", null, "New records token"),
+      h("p", { style: "margin:0" }, "Copy it now. Tarn only keeps a hash, so it can't be shown again."),
+      h("code", { class: "token" }, state.shownToken),
+      button("Done", "", () => { state.shownToken = ""; render(false, true); })));
+  }
+  if (state.preview) out.push(previewCard());
+  if (state.edit) out.push(editCard());
+  out.push(h("h2", null, "Applied immediately"),
+    h("div", { class: "card rows" }, ["ttl", "interval", "source", "acme_email"].map(k => settingRow(s, k)), tokenRow(s)));
+  out.push(h("h2", null, "Undone after 60 seconds unless you press Keep"),
+    h("div", { class: "card rows" },
+      ["zone", "listen"].concat(s.https ? ["staging"] : []).map(k => settingRow(s, k)),
+      h("div", { class: "setting" }, h("div", null, h("div", { class: "name" }, "Page password"), h("div", { class: "val" }, "Signs out every other browser.")),
+        button("Change", "ghost", () => { state.preview = null; state.message = ""; state.edit = { key: "password", value: "", error: "" }; render(false, true); }))));
+  const refreshBtn = button("Refresh device list now", "ghost", async () => {
+    try { await send("POST", "/refresh"); state.message = "Device list refreshed."; await load(true); } catch (e) { fail(e); }
+  });
+  const tools = [refreshBtn];
+  if (s.https) tools.push(button("Check Cloudflare token", "ghost", async () => {
+    try { await send("POST", "/settings/check-cloudflare"); state.message = "The Cloudflare token works."; } catch (e) { state.message = "Cloudflare token: " + e.message; }
+    render(false, true);
+  }));
+  out.push(h("h2", null, "Tools"), h("div", { class: "actions", style: "justify-content:flex-start;flex-wrap:wrap" }, tools));
+  out.push(h("p", { class: "small", style: "margin-top:18px" }, "The Cloudflare token, the tailscale binary and socket, the management address and the state directory can only be changed on the machine."));
+  return out;
+}
+function historyView() {
+  const out = head("History", "The last 50 changes to settings and services.");
+  if (!state.settings) return needSignIn(out);
+  if (state.message) out.push(h("div", { class: "alert warn", role: "status" }, state.message));
+  if (state.preview) out.push(previewCard());
+  const undo = async e => {
+    try {
+      if (e.kind === "setting" && SETTINGS[e.key] && SETTINGS[e.key].risky) return askPreview({ key: e.key, value: e.old }, e.id);
+      await afterChange(await send("POST", "/history/" + encodeURIComponent(e.id) + "/undo"));
+    } catch (err) { fail(err); }
+  };
+  out.push(table([["When"], ["What"], ["Change"], ["From", "hide-sm"], [""]], (state.history || []).map(e => h("tr", null,
+    h("td", { class: "nowrap small" }, fmt(e.time)),
+    h("td", null, h("div", { class: "name" }, e.kind === "service" ? e.key : label(e.key)), e.kind === "service" ? h("div", { class: "small" }, "Service") : null),
+    h("td", { class: "small mono" }, show(e.key, e.old) + " → " + show(e.key, e.new)),
+    h("td", { class: "small mono hide-sm" }, e.source),
+    h("td", null, e.undoable ? h("div", { class: "actions" }, button("Undo", "ghost", () => undo(e))) : null)
+  )), "No changes yet."));
+  return out;
+}
+let bannerSig = "";
+function renderBanner() {
+  const box = $("banner"), p = state.settings && state.settings.pending;
+  if (!p) { bannerSig = ""; box.replaceChildren(); return; }
+  const sig = [p.key, p.new, p.waiting_for_certificate, p.error, state.keepError].join("|");
+  if (sig === bannerSig) { const s = $("left"); if (s) s.textContent = p.seconds_left; return; }
+  bannerSig = sig;
+  const pw = p.needs_password ? h("input", { type: "password", placeholder: "New password", "aria-label": "New password", autocomplete: "off" }) : null;
+  const keep = button(p.waiting_for_certificate ? "Waiting for certificate" : "Keep", "", async () => {
+    try {
+      await send("POST", "/settings/keep", { password: pw ? pw.value : "" });
+      state.keepError = "";
+      state.message = p.key === "zone" ? "Done. Open this page on the new zone, then change split DNS in the Tailscale admin console." : "Kept.";
+      await load(true);
+    } catch (e) { state.keepError = e.message; render(false, true); }
+  });
+  if (p.waiting_for_certificate || p.error) keep.disabled = true;
+  box.replaceChildren(h("div", { class: "banner", role: "status" },
+    h("b", null, label(p.key) + ": " + show(p.key, p.old) + " → " + show(p.key, p.new)),
+    h("span", null, "Undoing in ", h("span", { id: "left" }, String(p.seconds_left)), " seconds unless you press Keep."),
+    p.error ? h("p", { class: "err", style: "margin:8px 0 0" }, p.error) : null,
+    state.keepError ? h("p", { class: "err", style: "margin:8px 0 0" }, state.keepError) : null,
+    h("div", { class: "actions" }, pw, keep, button("Undo now", "ghost", async () => {
+      try { await send("POST", "/settings/revert"); state.keepError = ""; await load(true); } catch (e) { fail(e); }
+    }))));
+}
+const views = { machines, services, dns, certificate, settings: settingsView, history: historyView };
+function render(listOnly, force) {
+  const main = $("main");
+  if (listOnly) {
+    const fresh = h("div", null, machines()).querySelector("#list");
+    $("list").replaceWith(fresh);
+    return;
+  }
+  // Don't disturb someone typing in the search box or token field.
+  const a = document.activeElement;
+  const typing = a && a.tagName === "INPUT";
+  const p = page();
+  renderBanner();
+  pill();
+  $("zone").textContent = (state.health && state.health.zone) || "";
+  document.querySelectorAll("nav a").forEach(n => {
+    if (n.getAttribute("href") === "#" + p) n.setAttribute("aria-current", "page"); else n.removeAttribute("aria-current");
+  });
+  $("foot").textContent = state.health ? "tarn " + state.health.version : "";
+  if (!force) {
+    // A background refresh must not wipe a form or a pending confirmation.
+    if (p === "services" && (state.form || state.confirm)) return;
+    if ((p === "settings" || p === "history") && (state.edit || state.preview || state.shownToken)) return;
+    if (typing && main.dataset.page === p) {
+      if (p === "machines" && $("list") && !state.locked) render(true);
+      return;
+    }
+  }
+  main.dataset.page = p;
+  const view = state.locked ? head("Sign in", "Sign in to see this page.").concat(gate()) : views[p]();
+  const warning = state.session && state.session.warning;
+  main.replaceChildren(...(warning ? [h("div", { class: "alert warn", role: "status" }, warning)] : []), ...(state.error ? [h("div", { class: "alert" }, state.error)] : []), ...view);
+}
+addEventListener("hashchange", () => render(false, true));
+load();
+let ticks = 0;
+setInterval(() => {
+  const p = state.settings && state.settings.pending;
+  if (p) { p.seconds_left = Math.max(0, p.seconds_left - 1); renderBanner(); }
+  ticks++;
+  if (p ? ticks % 2 === 0 : ticks % 10 === 0) load();
+}, 1000);
+</script>
+</body>
+</html>

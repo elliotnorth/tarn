@@ -1,0 +1,48 @@
+{
+  "Version": "1.104.5",
+  "BackendState": "Running",
+  "TailscaleIPs": ["100.64.0.1", "fd7a:115c:a1e0::1"],
+  "Self": {
+    "ID": "nTESTNAMES01CNTRL",
+    "HostName": "tarn",
+    "DNSName": "tarn.example-tailnet.ts.net.",
+    "OS": "linux",
+    "TailscaleIPs": ["100.64.0.1", "fd7a:115c:a1e0::1"],
+    "Online": true
+  },
+  "MagicDNSSuffix": "example-tailnet.ts.net",
+  "Peer": {
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000002": {
+      "ID": "nTESTNAMES02CNTRL",
+      "HostName": "DESKTOP-0000000",
+      "DNSName": "pc.example-tailnet.ts.net.",
+      "OS": "windows",
+      "TailscaleIPs": ["100.64.0.2", "fd7a:115c:a1e0::2"],
+      "Online": true
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000003": {
+      "ID": "nTESTNAMES03CNTRL",
+      "HostName": "Phone",
+      "DNSName": "phone.example-tailnet.ts.net.",
+      "OS": "android",
+      "TailscaleIPs": ["100.64.0.3", "fd7a:115c:a1e0::3"],
+      "Online": true
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000004": {
+      "ID": "nTESTNAMES04CNTRL",
+      "HostName": "Phone",
+      "DNSName": "phone-1.example-tailnet.ts.net.",
+      "OS": "android",
+      "TailscaleIPs": ["100.64.0.4", "fd7a:115c:a1e0::4"],
+      "Online": false
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000005": {
+      "ID": "nTESTNAMES05CNTRL",
+      "HostName": "NAS",
+      "DNSName": "",
+      "OS": "linux",
+      "TailscaleIPs": ["100.64.0.5/32"],
+      "Online": true
+    }
+  }
+}

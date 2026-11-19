@@ -1,0 +1,36 @@
+# Binaries and build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/tarn
+/tarn-*
+/build/
+/dist/
+/cover.html
+/cover.out
+
+# Secrets and key material: never commit certs, keys or tokens
+.env
+.env.*
+*.pem
+*.key
+*.crt
+!**/testdata/*.pem
+lego/
+.lego/
+
+# Go workspace
+go.work
+go.work.sum
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*~
+Thumbs.db
+Desktop.ini

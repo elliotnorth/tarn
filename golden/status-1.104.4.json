@@ -1,0 +1,356 @@
+{
+  "Version": "1.104.4-t938213198-gd38c96d6a",
+  "TUN": true,
+  "BackendState": "Running",
+  "HaveNodeKey": true,
+  "AuthURL": "",
+  "TailscaleIPs": [
+    "100.64.0.1",
+    "fd7a:115c:a1e0::1"
+  ],
+  "Self": {
+    "ID": "nTESTNODE01CNTRL",
+    "NodeID": 1001,
+    "PublicKey": "nodekey:REDACTED",
+    "HostName": "self-test",
+    "DNSName": "self-test.ts.net",
+    "OS": "windows",
+    "UserID": 1000000000000,
+    "TailscaleIPs": [
+      "100.64.0.2",
+      "fd7a:115c:a1e0::2"
+    ],
+    "AllowedIPs": [
+      "100.64.0.1/32",
+      "fd7a:115c:a1e0::1/128"
+    ],
+    "Addrs": [
+      "192.0.2.1:1070",
+      "192.0.2.2:41641",
+      "192.0.2.3:41641",
+      "192.0.2.4:41641"
+    ],
+    "CurAddr": "",
+    "Relay": "relay",
+    "PeerRelay": "",
+    "RxBytes": 0,
+    "TxBytes": 0,
+    "Created": "2026-11-02T18:26:35.137138733Z",
+    "LastWrite": "0001-01-01T00:00:00Z",
+    "LastSeen": "0001-01-01T00:00:00Z",
+    "LastHandshake": "0001-01-01T00:00:00Z",
+    "Online": true,
+    "ExitNode": false,
+    "ExitNodeOption": false,
+    "Active": false,
+    "PeerAPIURL": [
+      "http://100.64.0.1:33801",
+      "http://[fd7a:115c:a1e0::1]:37865"
+    ],
+    "TaildropTarget": 0,
+    "NoFileSharingReason": "",
+    "Capabilities": [
+      "HTTPS://TAILSCALE.COM/s/DEPRECATED-NODE-CAPS#see-https://github.com/tailscale/tailscale/issues/11508",
+      "default-auto-update",
+      "https",
+      "https://tailscale.com/cap/file-sharing",
+      "https://tailscale.com/cap/is-admin",
+      "https://tailscale.com/cap/is-owner",
+      "https://tailscale.com/cap/ssh",
+      "https://tailscale.com/cap/tailnet-lock",
+      "probe-udp-lifetime",
+      "ssh-behavior-v1",
+      "ssh-env-vars",
+      "store-appc-routes",
+      "tailnet-display-name"
+    ],
+    "CapMap": {
+      "default-auto-update": [
+        true
+      ],
+      "https": null,
+      "https://tailscale.com/cap/file-sharing": null,
+      "https://tailscale.com/cap/is-admin": null,
+      "https://tailscale.com/cap/is-owner": null,
+      "https://tailscale.com/cap/ssh": null,
+      "https://tailscale.com/cap/tailnet-lock": null,
+      "probe-udp-lifetime": null,
+      "ssh-behavior-v1": null,
+      "ssh-env-vars": null,
+      "store-appc-routes": null,
+      "tailnet-display-name": [
+        "example-user.github"
+      ]
+    },
+    "InNetworkMap": true,
+    "InMagicSock": false,
+    "InEngine": false,
+    "KeyExpiry": "2027-05-01T18:26:35Z"
+  },
+  "Health": [],
+  "MagicDNSSuffix": "ts.net",
+  "CurrentTailnet": {
+    "Name": "example-user.github",
+    "StableID": "TTESTTAIL02CNTRL",
+    "MagicDNSSuffix": "example-tailnet.ts.net",
+    "MagicDNSEnabled": true
+  },
+  "CertDomains": [
+    "ts.net"
+  ],
+  "ExtraRecords": null,
+  "Peer": {
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000001": {
+      "ID": "nTESTNODE03CNTRL",
+      "NodeID": 1002,
+      "PublicKey": "nodekey:REDACTED",
+      "HostName": "peer1",
+      "DNSName": "peer1",
+      "OS": "android",
+      "UserID": 1000000000000,
+      "TailscaleIPs": [
+        "100.64.0.3",
+        "fd7a:115c:a1e0::3"
+      ],
+      "AllowedIPs": [
+        "100.64.0.4/32",
+        "fd7a:115c:a1e0::4/128"
+      ],
+      "Addrs": null,
+      "CurAddr": "",
+      "Relay": "relay",
+      "PeerRelay": "",
+      "RxBytes": 0,
+      "TxBytes": 0,
+      "Created": "2026-11-02T18:32:07.540835847Z",
+      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastSeen": "2026-11-04T14:08:50.1Z",
+      "LastHandshake": "0001-01-01T00:00:00Z",
+      "Online": false,
+      "ExitNode": false,
+      "ExitNodeOption": false,
+      "Active": false,
+      "PeerAPIURL": null,
+      "TaildropTarget": 5,
+      "NoFileSharingReason": "",
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": false,
+      "KeyExpiry": "2030-01-01T00:00:00Z"
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000002": {
+      "ID": "nTESTNODE04CNTRL",
+      "NodeID": 1003,
+      "PublicKey": "nodekey:REDACTED",
+      "HostName": "peer1",
+      "DNSName": "peer1",
+      "OS": "linux",
+      "UserID": 1000000000000,
+      "TailscaleIPs": [
+        "100.64.0.3",
+        "fd7a:115c:a1e0::3"
+      ],
+      "AllowedIPs": [
+        "100.64.0.5/32",
+        "fd7a:115c:a1e0::5/128"
+      ],
+      "Addrs": null,
+      "CurAddr": "",
+      "Relay": "relay",
+      "PeerRelay": "",
+      "RxBytes": 0,
+      "TxBytes": 0,
+      "Created": "2026-11-02T18:39:51.708794089Z",
+      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "LastHandshake": "0001-01-01T00:00:00Z",
+      "Online": true,
+      "ExitNode": false,
+      "ExitNodeOption": false,
+      "Active": false,
+      "PeerAPIURL": [
+        "http://100.64.0.5:38488",
+        "http://[fd7a:115c:a1e0::5]:40081"
+      ],
+      "TaildropTarget": 1,
+      "NoFileSharingReason": "",
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": false,
+      "KeyExpiry": "2030-01-01T00:00:00Z"
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000003": {
+      "ID": "nTESTNODE05CNTRL",
+      "NodeID": 1004,
+      "PublicKey": "nodekey:REDACTED",
+      "HostName": "peer1",
+      "DNSName": "peer1",
+      "OS": "linux",
+      "UserID": 1000000000000,
+      "TailscaleIPs": [
+        "100.64.0.3",
+        "fd7a:115c:a1e0::3"
+      ],
+      "AllowedIPs": [
+        "100.64.0.6/32",
+        "fd7a:115c:a1e0::6/128"
+      ],
+      "Addrs": null,
+      "CurAddr": "",
+      "Relay": "relay",
+      "PeerRelay": "",
+      "RxBytes": 0,
+      "TxBytes": 0,
+      "Created": "2026-11-06T12:01:09.52190249Z",
+      "LastWrite": "2026-11-06T15:37:52.9424942-05:00",
+      "LastSeen": "2026-11-06T20:59:53.1Z",
+      "LastHandshake": "0001-01-01T00:00:00Z",
+      "Online": false,
+      "ExitNode": false,
+      "ExitNodeOption": false,
+      "Active": false,
+      "PeerAPIURL": [
+        "http://100.64.0.6:64491",
+        "http://[fd7a:115c:a1e0::6]:34353"
+      ],
+      "TaildropTarget": 5,
+      "NoFileSharingReason": "",
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": false,
+      "KeyExpiry": "2030-01-01T00:00:00Z"
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000004": {
+      "ID": "nTESTNODE06CNTRL",
+      "NodeID": 1005,
+      "PublicKey": "nodekey:REDACTED",
+      "HostName": "peer1",
+      "DNSName": "peer1",
+      "OS": "linux",
+      "UserID": 1000000000000,
+      "TailscaleIPs": [
+        "100.64.0.3",
+        "fd7a:115c:a1e0::3"
+      ],
+      "AllowedIPs": [
+        "100.64.0.7/32",
+        "fd7a:115c:a1e0::7/128"
+      ],
+      "Addrs": null,
+      "CurAddr": "",
+      "Relay": "relay",
+      "PeerRelay": "",
+      "RxBytes": 0,
+      "TxBytes": 0,
+      "Created": "2026-11-02T18:33:57.607137393Z",
+      "LastWrite": "0001-01-01T00:00:00Z",
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "LastHandshake": "0001-01-01T00:00:00Z",
+      "Online": true,
+      "ExitNode": false,
+      "ExitNodeOption": false,
+      "Active": false,
+      "PeerAPIURL": [
+        "http://100.64.0.7:61802",
+        "http://[fd7a:115c:a1e0::7]:61919"
+      ],
+      "TaildropTarget": 1,
+      "NoFileSharingReason": "",
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": false,
+      "KeyExpiry": "2030-01-01T00:00:00Z"
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000005": {
+      "ID": "nTESTNODE07CNTRL",
+      "NodeID": 1006,
+      "PublicKey": "nodekey:REDACTED",
+      "HostName": "peer1",
+      "DNSName": "peer1",
+      "OS": "linux",
+      "UserID": 1000000000000,
+      "TailscaleIPs": [
+        "100.64.0.3",
+        "fd7a:115c:a1e0::3"
+      ],
+      "AllowedIPs": [
+        "100.64.0.8/32",
+        "fd7a:115c:a1e0::8/128"
+      ],
+      "Addrs": null,
+      "CurAddr": "192.0.2.5:41641",
+      "Relay": "relay",
+      "PeerRelay": "",
+      "RxBytes": 5827308,
+      "TxBytes": 4836844,
+      "Created": "2026-11-02T18:48:45.025030496Z",
+      "LastWrite": "2026-11-07T17:03:13.76512-05:00",
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "LastHandshake": "2026-11-07T17:02:01.072282-05:00",
+      "Online": true,
+      "ExitNode": false,
+      "ExitNodeOption": false,
+      "Active": true,
+      "PeerAPIURL": [
+        "http://100.64.0.8:60979",
+        "http://[fd7a:115c:a1e0::8]:57750"
+      ],
+      "TaildropTarget": 1,
+      "NoFileSharingReason": "",
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": true,
+      "KeyExpiry": "2030-01-01T00:00:00Z"
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000006": {
+      "ID": "nTESTNODE08CNTRL",
+      "NodeID": 1007,
+      "PublicKey": "nodekey:REDACTED",
+      "HostName": "peer1",
+      "DNSName": "peer1",
+      "OS": "android",
+      "UserID": 1000000000000,
+      "TailscaleIPs": [
+        "100.64.0.3",
+        "fd7a:115c:a1e0::3"
+      ],
+      "AllowedIPs": [
+        "100.64.0.9/32",
+        "fd7a:115c:a1e0::9/128"
+      ],
+      "Addrs": null,
+      "CurAddr": "",
+      "Relay": "relay",
+      "PeerRelay": "",
+      "RxBytes": 0,
+      "TxBytes": 0,
+      "Created": "2026-11-05T00:23:31.48609347Z",
+      "LastWrite": "2026-11-06T18:26:21.0206255-05:00",
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "LastHandshake": "0001-01-01T00:00:00Z",
+      "Online": true,
+      "ExitNode": false,
+      "ExitNodeOption": false,
+      "Active": false,
+      "PeerAPIURL": [
+        "http://100.64.0.9:1",
+        "http://[fd7a:115c:a1e0::9]:1"
+      ],
+      "TaildropTarget": 1,
+      "NoFileSharingReason": "",
+      "InNetworkMap": true,
+      "InMagicSock": true,
+      "InEngine": false,
+      "KeyExpiry": "2030-01-01T00:00:00Z"
+    }
+  },
+  "User": {
+    "1000000000000": {
+      "ID": 1000000000000,
+      "LoginName": "example-user@github",
+      "DisplayName": "example-user",
+      "ProfilePicURL": ""
+    }
+  },
+  "ClientVersion": null
+}

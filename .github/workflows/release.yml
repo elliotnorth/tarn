@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go vet ./...
+      - run: go test -race ./...
+
+      - name: Build
+        run: |
+          mkdir dist
+          build() {
+            CGO_ENABLED=0 GOOS=linux GOARCH="$1" GOARM="$2" go build -trimpath -buildvcs=false \
+              -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" -o "dist/tarn-linux-$3" .
+          }
+          build amd64 "" amd64
+          build arm64 "" arm64
+          build arm 7 armv7
+          cp deploy/install.sh deploy/tarn.service dist/
+
+      - name: Checksums and signature
+        env:
+          TARN_RELEASE_KEY: ${{ secrets.TARN_RELEASE_KEY }}
+        run: |
+          (cd dist && sha256sum tarn-linux-* install.sh tarn.service > SHA256SUMS)
+          go run ./tools/signsums -sign dist/SHA256SUMS
+
+      - name: Check the installer against this release
+        run: |
+          TARN_BASE_URL="file://$PWD/dist" TARN_ROOT="$PWD/rootfs" sh deploy/install.sh
+          "$PWD/rootfs/usr/local/bin/tarn" -version | grep -F "${GITHUB_REF_NAME}"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --verify-tag --notes "Built with $(go version)."

@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # The latest patch release, not go.mod's minimum: go.mod says 1.27.0,
+          # and govulncheck fails on that version's standard-library bugs.
+          go-version: stable
+          cache: true
+
+      - name: go mod tidy (no diff)
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test -race ./...
+
+      # A short run on every push; longer runs are done by hand. Seeds and past
+      # failures in testdata/fuzz already run as part of go test above.
+      - name: fuzz smoke (DNS responder)
+        run: go test -run '^$' -fuzz '^FuzzReply$' -fuzztime 30s ./internal/dnsserver
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - name: go build
+        run: go build -o tarn .

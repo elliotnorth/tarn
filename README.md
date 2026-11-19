@@ -290,9 +290,18 @@ Restoring keeps the certificate, so it doesn't count against Let's Encrypt's lim
 ### Update or remove
 
 ```sh
-cd tarn && git pull && go build -o tarn . && sudo install tarn /usr/local/bin/tarn && sudo systemctl restart tarn
-sudo systemctl disable --now tarn && sudo rm -r /etc/systemd/system/tarn.service* /usr/local/bin/tarn   # remove
+sudo tarn update                 # the latest release, or -version v0.4.1 for a given one
+sudo tarn uninstall              # lists what it removes; add -yes to do it
 ```
+
+`tarn update` checks the release's signature and checksum, and that the new binary
+runs, before replacing anything. It restarts tarn and waits up to a minute for it to
+answer as the new version; if it doesn't, the old binary goes back and tarn restarts
+on it. The old binary stays as `tarn.previous`. tarn never checks for updates by
+itself.
+
+`tarn uninstall` keeps the certificate, config and `/etc/tarn`; `-purge` deletes them
+too. If you built tarn yourself, update with `git pull` and rebuild.
 
 With the `.deb`: `sudo apt remove tarn` keeps the certificate and config, and
 `sudo apt purge tarn` deletes them.

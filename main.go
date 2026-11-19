@@ -75,6 +75,10 @@ func main() {
 			os.Exit(runBackup(os.Args[2:], os.Stdout))
 		case "restore":
 			os.Exit(runRestore(os.Args[2:], os.Stdout))
+		case "update":
+			os.Exit(runUpdate(os.Args[2:], os.Stdout))
+		case "uninstall":
+			os.Exit(runUninstall(os.Args[2:], os.Stdout))
 		}
 	}
 	var c config

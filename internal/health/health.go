@@ -38,6 +38,7 @@ type Server struct {
 	Now          func() time.Time     // for tests; time.Now if nil
 	Admin        *Admin               // changes from the status page; nil when off
 	AdminWarning string               // why editing is off, shown on the page
+	Metrics      bool                 // serve /metrics (Prometheus text)
 	Log          *slog.Logger         // sign-ins and refused requests; discarded if nil
 
 	mu       sync.Mutex
@@ -96,6 +97,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", s.healthz)
 	mux.HandleFunc("GET /records", s.records)
 	mux.HandleFunc("GET /services", s.services)
+	mux.HandleFunc("GET /metrics", s.metrics)
 	mux.HandleFunc("GET /{$}", s.ui)
 	s.adminRoutes(mux)
 	return mux

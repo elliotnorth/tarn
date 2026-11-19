@@ -249,6 +249,12 @@ restart, and the password in `-admin-password-file` works again.
 port 53, split DNS, the certificate, the Cloudflare token, each service and the clock,
 and prints a fix for anything wrong. The token check creates and deletes one TXT record.
 
+For Prometheus, add `-metrics` and scrape `http://127.0.0.1:9580/metrics`. It has the
+same totals as `/healthz`: record count, refresh age and failures, DNS replies by
+outcome, and certificate expiry and renewal failures. It never has device names or
+client addresses. Like `/healthz`, it is open on loopback and needs sign-in or the
+records token through the proxy.
+
 ### Back up and restore
 
 ```sh
@@ -315,6 +321,7 @@ refused. Both are intended.
 | `-ttl` | `60` | Seconds answers may be cached |
 | `-mgmt` | `127.0.0.1:9580` | Status address, loopback only |
 | `-records-token-file` | | Require this bearer token on `/records` |
+| `-metrics` | off | Serve Prometheus metrics at `/metrics` on the status address |
 | `-cloudflare-token-file` | | Cloudflare token. Setting it turns on certificates |
 | `-services-file` | | Services to proxy on port 443 |
 | `-export-dir` | | Also write the certificate here |

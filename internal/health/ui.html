@@ -238,6 +238,21 @@ function signInForm() {
     h("p", null, "Sign in to add, change or remove services."),
     state.authError ? h("p", { class: "err", role: "alert" }, state.authError) : null, form);
 }
+// Settings each app needs before it works under a new name. Matched against the
+// service name and address, so "cloud" pointing at a Nextcloud box still matches.
+const appHints = [
+  [["nextcloud"], host => "Nextcloud: in config.php, add " + host + " to trusted_domains, set overwritehost to " + host + " and overwriteprotocol to https, and add tarn's tailnet IP to trusted_proxies."],
+  [["vaultwarden", "bitwarden"], host => "Vaultwarden: set DOMAIN=https://" + host + " and restart it. Passkeys and security keys made under the old name won't work under this one."],
+  [["immich"], host => "Immich: in Administration, Settings, Server, set External domain to https://" + host + " so shared links use it."],
+  [["jellyfin"], () => "Jellyfin: in Dashboard, Networking, add tarn's tailnet IP to Known proxies so it sees real client addresses."],
+  [["homeassistant", "home-assistant", "hass"], () => "Home Assistant: in configuration.yaml under http:, set use_x_forwarded_for: true and add tarn's tailnet IP to trusted_proxies, or it answers 400 Bad Request."],
+  [["ente", "minio", "s3"], host => "Ente and other S3 storage: turn on Preserve host for the storage service, and set museum's S3 endpoint to https://" + host + " so signed links match."],
+];
+function appHint(name, upstream, zone) {
+  const text = (name + " " + upstream).toLowerCase(), host = (name || "<name>") + "." + zone;
+  const hit = appHints.find(([keys]) => keys.some(k => text.split(/[^a-z0-9-]+/).some(w => w === k || w.startsWith(k + "-") || w.endsWith("-" + k)) || (k.length > 4 && text.includes(k))));
+  return hit ? hit[1](host) : "";
+}
 function serviceForm() {
   const f = state.form, zone = (state.health && state.health.zone) || "";
   const name = h("input", { value: f.name, required: "required", autocomplete: "off", spellcheck: "false", placeholder: "nextcloud" });
@@ -247,6 +262,11 @@ function serviceForm() {
   if (f.preserve) preserve.setAttribute("checked", "checked");
   const save = h("button", { type: "submit" }, f.edit ? "Save" : "Add service");
   const cancel = h("button", { type: "button", class: "ghost" }, "Cancel");
+  const hint = h("p", { class: "help", role: "note" });
+  const showHint = () => { hint.textContent = appHint(name.value.trim().toLowerCase(), upstream.value.trim(), zone); };
+  name.addEventListener("input", showHint);
+  upstream.addEventListener("input", showHint);
+  showHint();
   cancel.addEventListener("click", () => { state.form = null; render(false, true); });
   const form = h("form", { class: "card edit" },
     h("h2", null, f.edit ? "Change " + f.name : "Add a service"),
@@ -254,6 +274,7 @@ function serviceForm() {
     h("label", null, "Name", name, h("div", { class: "help" }, f.edit ? "" : "It will be at <name>." + zone + ". A device with the same name loses that name.")),
     h("label", null, "Forwards to", upstream, h("div", { class: "help" }, "The address tarn sends traffic to: a ts.net address or an IP and port.")),
     h("label", { class: "check" }, preserve, "Preserve host", h("div", { class: "help" }, "Forward requests byte for byte. Only for apps that hand out signed links, such as S3, MinIO or Ente.")),
+    hint,
     h("div", { class: "actions", style: "justify-content:flex-start" }, save, cancel));
   form.addEventListener("submit", async ev => {
     ev.preventDefault();

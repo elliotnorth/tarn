@@ -52,6 +52,7 @@ type config struct {
 	mgmt         string
 	tokenFile    string
 	metrics      bool
+	statusName   string
 	cfTokenFile  string
 	acmeEmail    string
 	acmeStaging  bool
@@ -93,6 +94,7 @@ func main() {
 	fs.StringVar(&c.mgmt, "mgmt", "127.0.0.1:9580", "management HTTP address for /healthz and /records (loopback only)")
 	fs.StringVar(&c.tokenFile, "records-token-file", "", "file holding a bearer token required on /records (optional)")
 	fs.BoolVar(&c.metrics, "metrics", false, "serve Prometheus metrics at /metrics on the management address")
+	fs.StringVar(&c.statusName, "status-name", "tarn", "serve the status page at https://<this name>.<zone> when proxying services; empty to turn off")
 	fs.StringVar(&c.cfTokenFile, "cloudflare-token-file", "", "file holding a Cloudflare API token; setting it turns on wildcard certificate issuance")
 	fs.StringVar(&c.acmeEmail, "acme-email", "", "contact address for the ACME account (optional)")
 	fs.BoolVar(&c.acmeStaging, "acme-staging", false, "use Let's Encrypt's staging service (certificates are not trusted)")
@@ -216,6 +218,13 @@ func run(c config, log *slog.Logger) error {
 		}
 		if svc, err = proxy.OpenManager(c.servicesFile, zone, log, adminOn || c.adminFile != ""); err != nil {
 			return fmt.Errorf("-services-file: %w", err)
+		}
+		if c.statusName != "" {
+			page, err := proxy.ParseServices(strings.NewReader(c.statusName+" http://"+c.mgmt), zone)
+			if err != nil {
+				return fmt.Errorf("-status-name: %w", err)
+			}
+			svc.SetBuiltin(page...)
 		}
 	}
 

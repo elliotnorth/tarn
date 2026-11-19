@@ -289,6 +289,7 @@ async function removeService(name) {
   await load(true);
 }
 function serviceActions(s) {
+  if (s.builtin) return h("span", { class: "small" }, "tarn's own page");
   if (state.confirm === s.name) {
     return h("div", { class: "actions" }, h("span", { class: "small" }, "Remove?"),
       button("Remove", "danger", () => removeService(s.name)),
@@ -319,7 +320,7 @@ function services() {
   if (canEdit) cols.push([""]);
   const empty = canEdit ? "No services yet. Add your first one." : h("span", null, "No services. Add lines to the file set with ", h("code", null, "-services-file"), ".");
   out.push(table(cols, (state.services || []).map(s => h("tr", null,
-    h("td", null, h("div", { class: "name" }, s.name, s.preserve_host ? h("span", { class: "badge" }, "Preserve host") : null)),
+    h("td", null, h("div", { class: "name" }, s.name, s.preserve_host ? h("span", { class: "badge" }, "Preserve host") : null, s.builtin ? h("span", { class: "badge" }, "Built in") : null)),
     h("td", null, h("a", { href: "https://" + s.name + "." + zone, rel: "noreferrer" }, s.name + "." + zone)),
     h("td", { class: "small mono hide-sm" }, s.upstream),
     canEdit ? h("td", null, serviceActions(s)) : null

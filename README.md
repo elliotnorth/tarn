@@ -202,15 +202,11 @@ sign URLs: most apps behind `tailscale serve` need the default.
 ### Status page
 
 Open `http://127.0.0.1:9580/` on the machine to see machines, services, DNS
-totals and the certificate. To see it from other devices, add this to the services
-file and open `https://tarn.t.example.com`:
-
-```
-tarn http://127.0.0.1:9580
-```
-
-Everyone on the tailnet can then open it, so use `-records-token-file` if the
-machine and service lists shouldn't be visible to them all.
+totals and the certificate. When tarn proxies services, the page is also at
+`https://tarn.t.example.com` from other devices. Its lists and totals need sign-in
+or the records token there. Use `-status-name` to give it another name, or
+`-status-name ""` to keep it on the machine only. A `tarn` line in the services file
+replaces it.
 
 **To add, change and remove services from the page,** set a password of at least 12
 characters and keep the services file where tarn can write to it:
@@ -344,6 +340,7 @@ refused. Both are intended.
 | `-mgmt` | `127.0.0.1:9580` | Status address, loopback only |
 | `-records-token-file` | | Require this bearer token on `/records` |
 | `-metrics` | off | Serve Prometheus metrics at `/metrics` on the status address |
+| `-status-name` | `tarn` | Name of the status page on the tailnet, when proxying services. Empty turns it off |
 | `-cloudflare-token-file` | | Cloudflare token. Setting it turns on certificates |
 | `-services-file` | | Services to proxy on port 443 |
 | `-export-dir` | | Also write the certificate here |

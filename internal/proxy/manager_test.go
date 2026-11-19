@@ -130,3 +130,69 @@ func TestManagerFailedSaveChangesNothing(t *testing.T) {
 		t.Errorf("names = %v", m.Names())
 	}
 }
+
+func TestBuiltinStatusPage(t *testing.T) {
+	page := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("status page"))
+	}))
+	defer page.Close()
+	mine := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("my own tarn service"))
+	}))
+	defer mine.Close()
+
+	m, path := newManager(t, "app http://127.0.0.1:1\n")
+	builtin, err := ParseServices(strings.NewReader("tarn "+page.URL), zone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.SetBuiltin(builtin...)
+
+	get := func() string {
+		rec := httptest.NewRecorder()
+		m.Router().ServeHTTP(rec, httptest.NewRequest("GET", "https://tarn.t.example.com/", nil))
+		return rec.Body.String()
+	}
+	if got := get(); got != "status page" {
+		t.Fatalf("built-in route: %q", got)
+	}
+	if !slices.Contains(m.Names(), "tarn") {
+		t.Errorf("names %v lack the built-in one, so DNS wouldn't answer it", m.Names())
+	}
+	list := m.List()
+	if len(list) != 2 || list[1].Name != "tarn" || !list[1].Builtin || list[0].Builtin {
+		t.Errorf("list %+v", list)
+	}
+	if err := m.Delete("tarn"); err == nil || !strings.Contains(err.Error(), "-status-name") {
+		t.Errorf("deleting the built-in page: %v", err)
+	}
+
+	// Saving another change keeps the built-in route and keeps it out of the file.
+	if err := m.Put("other", "http://127.0.0.1:2", false); err != nil {
+		t.Fatal(err)
+	}
+	if got := get(); got != "status page" {
+		t.Errorf("after Put: %q", got)
+	}
+	b, _ := os.ReadFile(path)
+	if strings.Contains(string(b), "tarn ") {
+		t.Errorf("built-in route written to the file:\n%s", b)
+	}
+
+	// A file entry with the same name wins, and removing it brings the page back.
+	if err := m.Put("tarn", mine.URL, false); err != nil {
+		t.Fatal(err)
+	}
+	if got := get(); got != "my own tarn service" {
+		t.Errorf("file entry didn't win: %q", got)
+	}
+	if n := strings.Count(strings.Join(m.Names(), " "), "tarn"); n != 1 {
+		t.Errorf("names %v", m.Names())
+	}
+	if err := m.Delete("tarn"); err != nil {
+		t.Fatal(err)
+	}
+	if got := get(); got != "status page" {
+		t.Errorf("after removing the file entry: %q", got)
+	}
+}

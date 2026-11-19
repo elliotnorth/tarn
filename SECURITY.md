@@ -42,8 +42,9 @@ device that can reach tarn's tailnet IP can send it DNS queries and HTTPS reques
   They never crash tarn, and the log lines they cause are rate limited.
 - Only blocked and failed queries are logged, rate limited. Successful lookups are
   never logged.
-- The management port listens on loopback only. When it's published through the
-  proxy, everything except sign-in needs a session or the records token.
+- The management port listens on loopback only. When tarn proxies services, it is
+  published as `tarn.<zone>` unless `-status-name ""` is set; through the proxy,
+  everything except the page and sign-in needs a session or the records token.
 - Every change needs a session, the `X-Tarn-Request` header, a matching `Origin`
   and a loopback `Host`. Those checks run before the password is looked at.
   Repeated wrong passwords lock sign-in for a while, and each attempt is logged

@@ -88,6 +88,7 @@ type Info struct {
 	Name         string `json:"name"`
 	Upstream     string `json:"upstream"`
 	PreserveHost bool   `json:"preserve_host,omitempty"`
+	Builtin      bool   `json:"builtin,omitempty"` // tarn's own, not in the file
 }
 
 // Manager owns the services file and keeps the Router in step with it.
@@ -100,7 +101,8 @@ type Manager struct {
 	router *Router
 
 	mu       sync.Mutex
-	services []Service
+	services []Service // from the file
+	builtin  []Service // tarn's own; a file entry of the same name wins
 }
 
 // OpenManager loads the services file. An editable file may be missing or
@@ -138,6 +140,27 @@ func (m *Manager) SetZones(zones ...string) {
 	m.router.SetZones(zones...)
 }
 
+// SetBuiltin sets tarn's own routes, such as its status page. They are not
+// written to the file, and a file entry with the same name replaces them.
+func (m *Manager) SetBuiltin(services ...Service) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.builtin = services
+	m.router.Set(m.merged(m.services))
+}
+
+// merged is the file's services plus the built-in ones they don't replace.
+// Callers hold mu.
+func (m *Manager) merged(file []Service) []Service {
+	out := slices.Clone(file)
+	for _, b := range m.builtin {
+		if !slices.ContainsFunc(file, func(s Service) bool { return s.Name == b.Name }) {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
 // Router returns the live handler.
 func (m *Manager) Router() *Router { return m.router }
 
@@ -145,16 +168,17 @@ func (m *Manager) Router() *Router { return m.router }
 func (m *Manager) Names() []string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return Names(m.services)
+	return Names(m.merged(m.services))
 }
 
 // List returns the current services.
 func (m *Manager) List() []Info {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	out := make([]Info, len(m.services))
-	for i, s := range m.services {
-		out[i] = Info{s.Name, s.Upstream.String(), s.PreserveHost}
+	out := make([]Info, 0, len(m.services)+len(m.builtin))
+	for _, s := range m.merged(m.services) {
+		builtin := !slices.ContainsFunc(m.services, func(f Service) bool { return f.Name == s.Name })
+		out = append(out, Info{s.Name, s.Upstream.String(), s.PreserveHost, builtin})
 	}
 	return out
 }
@@ -205,7 +229,11 @@ func (m *Manager) Delete(name string) error {
 	m.mu.Lock()
 	i := slices.IndexFunc(m.services, func(o Service) bool { return o.Name == name })
 	if i < 0 {
+		builtin := slices.ContainsFunc(m.builtin, func(o Service) bool { return o.Name == name })
 		m.mu.Unlock()
+		if builtin {
+			return fmt.Errorf("%s is tarn's own status page. To turn it off, start tarn with -status-name \"\"", name)
+		}
 		return fmt.Errorf("no service named %q", name)
 	}
 	err := m.commit(slices.Delete(slices.Clone(m.services), i, i+1))
@@ -233,7 +261,7 @@ func (m *Manager) commit(next []Service) error {
 		return fmt.Errorf("can't save the services file (is it in tarn's state directory?): %w", err)
 	}
 	m.services = next
-	m.router.Set(next)
+	m.router.Set(m.merged(next))
 	return nil
 }
 

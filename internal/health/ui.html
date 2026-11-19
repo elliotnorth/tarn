@@ -205,11 +205,27 @@ function loginForm() {
   return h("div", { class: "card" }, h("div", { class: "empty" },
     h("p", null, "Enter the records token, or open this page on the machine itself."), form));
 }
+// The steps left after the setup wizard, until each is done.
+function gettingStarted() {
+  const t = state.health && state.health.tls, zone = (state.health && state.health.zone) || "";
+  const own = (state.services || []).filter(s => !s.builtin);
+  const steps = [];
+  if (t && t.staging && t.not_after) {
+    steps.push(h("li", null, "The test certificate works. Switch to a trusted one in ", h("a", { href: "#settings" }, "Settings"), ", under Certificate service."));
+  }
+  if (state.services && !own.length) {
+    steps.push(h("li", null, "Add your first service on the ", h("a", { href: "#services" }, "Services"), " tab, then open it from your phone at https://<name>." + zone + "."));
+  }
+  if (!steps.length) return null;
+  return h("div", { class: "card", style: "padding:14px 16px;margin-bottom:16px" }, h("b", null, "Getting started"), h("ol", { style: "margin:8px 0 0;padding-left:20px" }, steps));
+}
 function machines() {
   const out = head("Machines", "Every device tarn answers for.");
   if (state.locked) return out.concat(loginForm());
   const search = h("input", { type: "search", placeholder: "Search by name or address", "aria-label": "Search machines", value: state.filter, id: "q" });
   search.addEventListener("input", () => { state.filter = search.value; render(true); });
+  const start = gettingStarted();
+  if (start) out.push(start);
   const clashes = (state.health && state.health.collisions) || [];
   if (clashes.length) out.push(h("div", { class: "alert warn", role: "status" }, h("b", null, "Name clashes"), clashes.map(c => h("div", null, clashText(c)))));
   out.push(h("div", { class: "bar" }, search));

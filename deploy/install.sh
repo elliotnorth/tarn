@@ -54,12 +54,26 @@ openssl pkeyutl -verify -pubin -inkey "$tmp/release.pub" -rawin \
 install -d "$root/usr/local/bin" "$root/etc/systemd/system"
 install -m 755 "$tmp/$bin" "$root/usr/local/bin/tarn"
 unit="$root/etc/systemd/system/tarn.service"
+fresh=0
 if [ -e "$unit" ]; then
 	echo "Keeping your existing $unit"
 else
 	install -m 644 "$tmp/tarn.service" "$unit"
+	fresh=1
 fi
 [ -n "$root" ] || systemctl daemon-reload
 
 echo "Installed $("$root/usr/local/bin/tarn" -version 2>/dev/null || echo tarn)."
-echo "Check this machine with: tarn doctor"
+if [ -z "$root" ] && [ "$fresh" = 1 ]; then
+	# A fresh install starts in setup mode: a page on this machine's tailnet
+	# address that asks for the zone and the Cloudflare token.
+	systemctl enable --now tarn
+	i=0
+	while [ "$i" -lt 15 ] && ! /usr/local/bin/tarn status >/dev/null 2>&1; do
+		sleep 1 # status succeeds once the setup page is up
+		i=$((i + 1))
+	done
+	/usr/local/bin/tarn status || echo "tarn isn't answering yet. Check this machine with: sudo tarn doctor"
+else
+	echo "Check this machine with: sudo tarn doctor"
+fi

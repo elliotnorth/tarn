@@ -40,10 +40,34 @@ about 9 MB of RAM and almost no CPU on a real tailnet.
 
 You don't need a public or static IP, or port forwarding.
 
-## Setup
+## Quick start
 
-Replace `t.example.com` with your subdomain, and `100.x.y.z` with the machine's
-tailnet IP from `tailscale ip -4`.
+1. [Create a Cloudflare token](https://dash.cloudflare.com/profile/api-tokens) with
+   **Create Custom Token**: **Zone → Zone → Read** and **Zone → DNS → Edit**, for
+   your one domain.
+2. On the Linux machine, install tarn. It starts in setup mode and prints an address
+   and a one-time code:
+
+   ```sh
+   curl -fsSL https://github.com/elliotnorth/tarn/releases/latest/download/install.sh | sudo sh
+   ```
+
+3. Open that address from another device on your tailnet. Enter the code, your zone
+   (such as `t.example.com`), the token and a password for the status page.
+4. In the [Tailscale admin console](https://login.tailscale.com/admin/dns), add the
+   nameserver the last page shows, with **Restrict to domain** on.
+5. Open `https://tarn.t.example.com`, switch to a trusted certificate, and add your
+   services.
+
+`sudo tarn status` shows the address and code again, and `sudo tarn doctor` checks
+every step. Setup starts with Let's Encrypt's staging service, so a mistake can't
+use up the weekly limit. The browser warns about the certificate until you switch.
+
+## Setup by hand
+
+This is what the wizard does, for a machine set up with flags instead, or with
+nginx or traefik. Replace `t.example.com` with your subdomain, and `100.x.y.z` with
+the machine's tailnet IP from `tailscale ip -4`.
 
 ### 1. Install
 
@@ -56,8 +80,8 @@ curl -fsSL https://github.com/elliotnorth/tarn/releases/latest/download/install.
 Or, on Debian or Ubuntu, the `.deb` from the same release, checked against
 `SHA256SUMS` (`armhf` for 32-bit Raspberry Pi OS). It runs tarn as a `tarn` system
 user, puts the binary in `/usr/bin` (use that path in the `ExecStart` lines below),
-and keeps state in `/var/lib/tarn`. It ships no config or secrets and doesn't start
-tarn until you've set a zone:
+and keeps state in `/var/lib/tarn`. It ships no config or secrets, and like the
+installer it starts tarn in setup mode (`sudo tarn status` shows the address):
 
 ```sh
 sudo apt install ./tarn_0.4.1_amd64.deb
@@ -272,8 +296,9 @@ sudo systemctl start tarn
 
 The backup holds the state directory (certificates, keys, the ACME account, settings
 and history) and the services file. **It includes private keys**, so it's written
-readable by you only. Keep it somewhere private. The Cloudflare token isn't in it, so
-keep a copy of that file separately.
+readable by you only. Keep it somewhere private. If you used the setup wizard, the
+Cloudflare token is in it too. A token in `/etc/tarn` isn't, so keep a copy of that
+file separately.
 
 Restore refuses to run while tarn is running, and it keeps the current state next to
 the state directory as `*.before-restore-<time>`. It writes the services file only to

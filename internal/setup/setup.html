@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up tarn</title>
+<style>
+:root {
+  --bg: #faf9f8; --panel: #fff; --text: #1f1e1d; --muted: #706e6b; --line: #e7e5e2;
+  --accent: #3b5bdb; --good: #2b8a3e; --bad: #c92a2a; --badge: #efedea; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181a; --panel: #212124; --text: #ececea; --muted: #a09e9a; --line: #333336;
+    --accent: #8ea6ff; --good: #5cc26f; --bad: #ff7b7b; --badge: #333336; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; }
+.brand { font-weight: 700; font-size: 17px; letter-spacing: -.02em; margin-bottom: 20px; }
+h1 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; }
+.sub { color: var(--muted); margin: 0 0 20px; }
+.steps { display: flex; gap: 6px; margin-bottom: 20px; }
+.steps span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.steps span.on { background: var(--accent); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+label { display: block; font-weight: 500; margin-bottom: 16px; }
+.help { color: var(--muted); font-size: 13px; font-weight: 400; margin-top: 4px; }
+input { display: block; font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; margin-top: 6px; }
+input:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button { font: inherit; color: #fff; background: var(--accent); border: 0; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
+button:disabled { opacity: .6; cursor: default; }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.err { color: var(--bad); margin: 0 0 14px; overflow-wrap: anywhere; }
+.ok { color: var(--good); }
+ol { padding-left: 20px; margin: 0 0 16px; }
+li { margin-bottom: 8px; }
+code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--badge); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">tarn</div>
+  <div class="steps" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <main id="main"></main>
+</div>
+<script>
+"use strict";
+// Everything goes in through textContent, never innerHTML.
+const $ = id => document.getElementById(id);
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) e.append(k);
+  return e;
+}
+const s = { step: 0, code: "", zone: "", token: "", email: "", ip: "", error: "", busy: false };
+
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Tarn-Request": "1" }, body: JSON.stringify(Object.assign({ code: s.code }, body)) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || "HTTP " + r.status);
+  return data;
+}
+
+function input(attrs) { return h("input", Object.assign({ autocomplete: "off", spellcheck: "false" }, attrs)); }
+function form(fields, submitLabel, onSubmit, back) {
+  const submit = h("button", { type: "submit" }, s.busy ? "Checking..." : submitLabel);
+  if (s.busy) submit.disabled = true;
+  const f = h("form", { class: "card" }, s.error ? h("p", { class: "err", role: "alert" }, s.error) : null, fields,
+    h("div", { class: "actions" }, submit, back ? h("button", { type: "button", class: "ghost", id: "back" }, "Back") : null));
+  f.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    s.busy = true; s.error = ""; render();
+    try { await onSubmit(); } catch (e) { s.error = e.message; }
+    s.busy = false; render();
+  });
+  if (back) setTimeout(() => $("back") && $("back").addEventListener("click", () => { s.error = ""; s.step--; render(); }));
+  return f;
+}
+
+const steps = [
+  function code() {
+    const c = input({ value: s.code, required: "required", placeholder: "ABCD-EFGH-JKLM", "aria-label": "Setup code" });
+    return [h("h1", null, "Set up tarn"), h("p", { class: "sub" }, "Enter the setup code. On the machine running tarn, run: sudo tarn status"),
+      form([h("label", null, "Setup code", c)], "Continue", async () => {
+        s.code = c.value.trim();
+        const r = await post("/setup/code", {});
+        s.ip = r.ip; s.step = 1;
+      })];
+  },
+  function cloudflare() {
+    const z = input({ value: s.zone, required: "required", placeholder: "t.example.com" });
+    const t = input({ value: s.token, required: "required", type: "password", placeholder: "Cloudflare API token" });
+    return [h("h1", null, "Your names"), h("p", { class: "sub" }, "tarn answers for one subdomain of a domain you keep at Cloudflare, and gets its certificate there."),
+      form([
+        h("label", null, "Zone", z, h("div", { class: "help" }, "A subdomain only for tarn, such as t.example.com. Devices will be at laptop.t.example.com.")),
+        h("label", null, "Cloudflare token", t, h("div", { class: "help" }, "Create a Custom Token with Zone, Zone, Read and Zone, DNS, Edit for this domain only. Never use the global API key. tarn checks it by adding and removing one TXT record.")),
+      ], "Check token", async () => {
+        s.zone = z.value.trim(); s.token = t.value.trim();
+        const r = await post("/setup/token", { zone: s.zone, token: s.token });
+        s.zone = r.zone; s.step = 2;
+      }, true)];
+  },
+  function password() {
+    const p1 = input({ required: "required", type: "password", autocomplete: "new-password", minlength: "12", maxlength: "72" });
+    const p2 = input({ required: "required", type: "password", autocomplete: "new-password" });
+    const e = input({ value: s.email, type: "email", placeholder: "you@example.com (optional)" });
+    return [h("h1", null, "Status page password"), h("p", { class: "sub" }, "This password lets you add services and change settings from the status page, so make it strong."),
+      form([
+        h("label", null, "Password", p1, h("div", { class: "help" }, "At least 12 characters.")),
+        h("label", null, "Password again", p2),
+        h("label", null, "Email for Let's Encrypt", e, h("div", { class: "help" }, "Optional. Only Let's Encrypt sees it.")),
+      ], "Finish setup", async () => {
+        if (p1.value !== p2.value) throw new Error("The passwords don't match.");
+        s.email = e.value.trim();
+        const r = await post("/setup/finish", { zone: s.zone, token: s.token, password: p1.value, email: s.email });
+        s.token = ""; s.zone = r.zone; s.ip = r.ip || s.ip; s.step = 3;
+      }, true)];
+  },
+  function done() {
+    const page = "https://tarn." + s.zone;
+    return [h("h1", null, "Almost there"), h("p", { class: "sub" }, "tarn is restarting with your settings and getting a test certificate."),
+      h("div", { class: "card" }, h("ol", null,
+        h("li", null, "In the ", h("a", { href: "https://login.tailscale.com/admin/dns", rel: "noreferrer", target: "_blank" }, "Tailscale admin console"), ", under DNS, Nameservers, add a Custom nameserver ", h("code", null, s.ip || "this machine's tailnet IP"), ", turn on Restrict to domain, and enter ", h("code", null, s.zone), "."),
+        h("li", null, "In a minute, open ", h("a", { href: page, rel: "noreferrer" }, page), " from a device on your tailnet. The browser warns about the certificate until you switch to a trusted one; the status page shows how."),
+        h("li", null, "Sign in with your password and add your first service.")),
+        h("p", { class: "help" }, "This setup page has closed. tarn doctor on the machine checks every step."))];
+  },
+];
+
+function render() {
+  document.querySelectorAll(".steps span").forEach((e, i) => e.classList.toggle("on", i <= s.step));
+  $("main").replaceChildren(...steps[s.step]());
+  const first = $("main").querySelector("input");
+  if (first && !s.busy) first.focus();
+}
+render();
+</script>
+</body>
+</html>

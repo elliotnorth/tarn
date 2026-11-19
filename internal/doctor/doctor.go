@@ -35,6 +35,7 @@ type Result struct {
 type Health struct {
 	Status      string            `json:"status"`
 	Version     string            `json:"version"`
+	SetupURL    string            `json:"setup_url"`
 	Zone        string            `json:"zone"`
 	Records     int               `json:"records"`
 	LastRefresh *time.Time        `json:"last_refresh"`
@@ -125,6 +126,11 @@ func Run(ctx context.Context, e *Env) []Result {
 	switch {
 	case healthErr != nil:
 		add(Result{Name: "tarn", Level: Fail, Detail: "tarn isn't answering on its status port", Fix: "Check: systemctl status tarn, then: journalctl -u tarn -n 30"})
+	case health.Status == "setup":
+		add(Result{Name: "tarn", Level: Warn, Detail: "waiting for setup at " + health.SetupURL,
+			Fix: "Open that address from a device on your tailnet. sudo tarn status shows the setup code"})
+		add(clock(ctx, e))
+		return out
 	case health.Status == "ok":
 		zone = health.Zone
 		add(Result{Name: "tarn", Detail: fmt.Sprintf("running %s, serving %d names", health.Version, health.Records)})

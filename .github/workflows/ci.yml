@@ -51,7 +51,7 @@ jobs:
           getent passwd tarn
           /usr/bin/tarn -version
           systemd-analyze verify /usr/lib/systemd/system/tarn.service
-          if systemctl is-active --quiet tarn; then echo "started without a zone"; exit 1; fi
+          systemctl is-enabled tarn
           sudo dpkg -i "$deb"
           sudo dpkg --purge tarn
           test ! -e /usr/bin/tarn

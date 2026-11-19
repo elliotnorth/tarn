@@ -166,6 +166,13 @@ func run(c config, log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("-config: %w", err)
 	}
+	if needsSetup(c, configExists) {
+		var src peers.Source = peers.CLI{Path: c.tailscale}
+		if c.source == "localapi" {
+			src = peers.LocalAPI{Socket: c.socket}
+		}
+		return runSetup(c, log, src)
+	}
 	zone, err := checkZone(c.zone)
 	if err != nil {
 		return err
@@ -182,6 +189,9 @@ func run(c config, log *slog.Logger) error {
 	token, err := readSecret("-records-token-file", c.tokenFile)
 	if err != nil {
 		return err
+	}
+	if c.cfTokenFile == "" {
+		c.cfTokenFile = stateTokenFile(c.stateDir) // saved by the setup wizard
 	}
 	cfToken, err := readSecret("-cloudflare-token-file", c.cfTokenFile)
 	if err != nil {

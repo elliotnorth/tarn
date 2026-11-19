@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
@@ -25,7 +26,7 @@ import (
 )
 
 type cliOptions struct {
-	mgmt, tailscale, config, tokenFile string
+	mgmt, tailscale, config, tokenFile, stateDir string
 }
 
 func parseCLI(name string, args []string) cliOptions {
@@ -34,6 +35,7 @@ func parseCLI(name string, args []string) cliOptions {
 	fs.StringVar(&o.mgmt, "mgmt", "127.0.0.1:9580", "tarn's management address")
 	fs.StringVar(&o.tailscale, "tailscale", "tailscale", "path to the tailscale binary")
 	fs.StringVar(&o.config, "config", "/var/lib/tarn/config", "tarn's config file")
+	fs.StringVar(&o.stateDir, "state-dir", "/var/lib/tarn", "tarn's state directory")
 	fs.StringVar(&o.tokenFile, "cloudflare-token-file", "", "Cloudflare token (default: read from the systemd unit)")
 	fs.Parse(args)
 	return o
@@ -79,6 +81,10 @@ func runStatus(args []string, out io.Writer) int {
 	if err := getJSON(ctx, o, "/healthz", &h); err != nil {
 		fmt.Fprintln(out, "tarn isn't answering. Check: systemctl status tarn, or run: tarn doctor")
 		return 1
+	}
+	if h.Status == "setup" {
+		writeSetupStatus(out, &h, readSetupCode(o.stateDir))
+		return 0
 	}
 	var services []doctor.Service
 	serr := getJSON(ctx, o, "/services", &services)
@@ -207,15 +213,19 @@ func askSOA(ctx context.Context, addr, zone string) error {
 func cloudflareFor(o cliOptions) (doctor.Zone, error) {
 	path := o.tokenFile
 	if path == "" {
-		b, err := exec.Command("systemctl", "cat", "tarn").Output()
-		if err != nil {
+		if b, err := exec.Command("systemctl", "cat", "tarn").Output(); err == nil {
+			if m := credentialLine.FindSubmatch(b); m != nil {
+				path = string(m[1])
+			}
+		}
+	}
+	if path == "" {
+		// Saved by the setup wizard. Reading it needs root, like the state
+		// directory itself.
+		path = filepath.Join(o.stateDir, tokenFileName)
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
-		m := credentialLine.FindSubmatch(b)
-		if m == nil {
-			return nil, nil
-		}
-		path = string(m[1])
 	}
 	b, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrPermission) {
@@ -256,4 +266,23 @@ func internetTime(ctx context.Context) (time.Time, error) {
 	}
 	resp.Body.Close()
 	return http.ParseTime(resp.Header.Get("Date"))
+}
+
+// readSetupCode reads the setup code tarn saved, which needs root.
+func readSetupCode(stateDir string) string {
+	b, err := os.ReadFile(filepath.Join(stateDir, setupCodeFileName))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+func writeSetupStatus(out io.Writer, h *doctor.Health, code string) {
+	fmt.Fprintf(out, "tarn %s is waiting to be set up.\n", h.Version)
+	fmt.Fprintf(out, "Open %s from a device on your tailnet", h.SetupURL)
+	if code == "" {
+		fmt.Fprintln(out, ". Run sudo tarn status to see the setup code.")
+		return
+	}
+	fmt.Fprintf(out, " and enter the code:\n\n    %s\n", code)
 }

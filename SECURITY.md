@@ -23,10 +23,11 @@ section says what it protects, from whom, and what it doesn't try to do.
 | Asset | Where it lives | Why it matters |
 |-------|----------------|----------------|
 | The wildcard private key | State directory, mode 0600 | Anyone holding it can impersonate every `*.<zone>` name to a device that resolves them |
-| The Cloudflare API token | A root-only file, passed in through systemd `LoadCredential` | It can edit DNS for the zone, so it can get new certificates |
+| The Cloudflare API token | A root-only file passed in through systemd `LoadCredential`, or, after the setup wizard, the state directory, mode 0600 | It can edit DNS for the zone, so it can get new certificates |
 | The ACME account key | State directory, mode 0600 | Lets someone act as your Let's Encrypt account, including revoking certificates |
 | The page password and sessions | A bcrypt hash in the config file; sessions in memory | The page can change services, and so where traffic goes |
 | Signed links passing through the proxy | In memory only | They work as passwords until they expire |
+| The setup code | State directory, mode 0600, and the log, until setup finishes | Whoever has it can finish setup: choose the zone, token and page password |
 | Which device asks for which name | Not stored | A full query log would show who uses what |
 
 ### Who we defend against
@@ -49,6 +50,12 @@ device that can reach tarn's tailnet IP can send it DNS queries and HTTPS reques
   and a loopback `Host`. Those checks run before the password is looked at.
   Repeated wrong passwords lock sign-in for a while, and each attempt is logged
   with the source IP.
+- The setup wizard runs only on a fresh install with no config file. It serves plain
+  HTTP on the tailnet address, which WireGuard encrypts, and closes when setup
+  finishes. Every request needs the one-time code (about 60 bits), the
+  `X-Tarn-Request` header, a matching `Origin` and an IP address as the `Host`.
+  Five wrong codes lock it for 15 minutes. It saves the token only after Cloudflare
+  accepts it, and starts on Let's Encrypt staging.
 - Some settings can never be changed from the page because they would amount to
   running commands or reading files on the host: the tailscale binary and socket,
   the state directory, file paths, the management address and the Cloudflare

@@ -149,3 +149,19 @@ func TestNoTokenSkipsCloudflare(t *testing.T) {
 		}
 	}
 }
+
+func TestSplitDNSRoute(t *testing.T) {
+	text := "Split DNS Routes:\n  - t.example.com -> 100.64.0.10\n  - other.example.com -> 100.64.0.1\n"
+	if r, line := SplitDNSRoute(text, "t.example.com", "100.64.0.1"); r != RouteOther || line != "- t.example.com -> 100.64.0.10" {
+		t.Errorf("prefix address counted as a match: %v %q", r, line)
+	}
+	if r, _ := SplitDNSRoute(text, "t.example.com", "100.64.0.10"); r != RouteOK {
+		t.Errorf("exact address: %v", r)
+	}
+	if r, _ := SplitDNSRoute(text, "example.com", "100.64.0.1"); r != RouteMissing {
+		t.Errorf("parent zone matched a subdomain route: %v", r)
+	}
+	if r, _ := SplitDNSRoute(text, "x.example.com", "100.64.0.1"); r != RouteMissing {
+		t.Errorf("missing zone: %v", r)
+	}
+}

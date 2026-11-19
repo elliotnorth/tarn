@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -185,21 +186,44 @@ func splitDNS(ctx context.Context, e *Env, zone, ip string) Result {
 		r.Level, r.Detail = Warn, "can't read tailscale dns status: "+err.Error()
 		return r
 	}
-	for _, line := range strings.Split(text, "\n") {
-		if !strings.Contains(line, zone) || !strings.Contains(line, "100.") {
-			continue
-		}
-		if ip != "" && !strings.Contains(line, ip) {
-			r.Level, r.Detail = Fail, "the route points at another address: "+strings.TrimSpace(line)
-			r.Fix = fmt.Sprintf("In the Tailscale admin console, change the nameserver for %s to %s", zone, ip)
-			return r
-		}
+	switch route, line := SplitDNSRoute(text, zone, ip); route {
+	case RouteOther:
+		r.Level, r.Detail = Fail, "the route points at another address: "+line
+		r.Fix = fmt.Sprintf("In the Tailscale admin console, change the nameserver for %s to %s", zone, ip)
+		return r
+	case RouteOK:
 		r.Detail = "route for " + zone + " is present"
 		return r
 	}
 	r.Level, r.Detail = Fail, "no route for "+zone
 	r.Fix = fmt.Sprintf("In the Tailscale admin console, under DNS, add a custom nameserver %s, turn on Restrict to domain, and enter %s", ip, zone)
 	return r
+}
+
+// Route is what `tailscale dns status` says about tarn's zone.
+type Route int
+
+const (
+	RouteMissing Route = iota // no split DNS route for the zone
+	RouteOK                   // a route to tarn's address
+	RouteOther                // a route to some other tailnet address
+)
+
+// SplitDNSRoute finds the zone's route in the text of `tailscale dns status`
+// and says whether it points at ip. line is that route, trimmed.
+func SplitDNSRoute(text, zone, ip string) (route Route, line string) {
+	for _, l := range strings.Split(text, "\n") {
+		if !hasZone(l, zone) || !strings.Contains(l, "100.") {
+			continue
+		}
+		// Whole addresses only: 100.64.0.1 is not 100.64.0.10.
+		words := strings.FieldsFunc(l, func(r rune) bool { return !(r == '.' || r >= '0' && r <= '9') })
+		if ip != "" && !slices.Contains(words, ip) {
+			return RouteOther, strings.TrimSpace(l)
+		}
+		return RouteOK, strings.TrimSpace(l)
+	}
+	return RouteMissing, ""
 }
 
 func certificate(e *Env, t *TLSState) Result {
@@ -298,6 +322,17 @@ func clock(ctx context.Context, e *Env) Result {
 func Failed(results []Result) bool {
 	for _, r := range results {
 		if r.Level == Fail {
+			return true
+		}
+	}
+	return false
+}
+
+// hasZone reports whether a line names zone as a whole word, so that
+// "at.example.com" doesn't count for "t.example.com".
+func hasZone(line, zone string) bool {
+	for _, f := range strings.Fields(line) {
+		if strings.TrimRight(strings.TrimLeft(f, "-*\"'("), ".:,;\"')") == zone {
 			return true
 		}
 	}

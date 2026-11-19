@@ -22,6 +22,8 @@ html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
 header { background: var(--panel); border-bottom: 1px solid var(--line); }
+.dnsbar { background: var(--bad); color: var(--panel); font-weight: 500; padding: 10px 16px; font-size: 14px; text-align: center; overflow-wrap: anywhere; }
+.dnsbar[hidden] { display: none; }
 .top { display: flex; align-items: center; gap: 12px; padding-top: 14px; }
 .brand { font-weight: 700; font-size: 17px; letter-spacing: -.02em; }
 .zone { color: var(--muted); overflow-wrap: anywhere; }
@@ -107,6 +109,7 @@ footer { color: var(--muted); font-size: 12px; padding-bottom: 24px; }
     <a href="#machines">Machines</a><a href="#services">Services</a><a href="#dns">DNS</a><a href="#certificate">Certificate</a><a href="#settings">Settings</a><a href="#history">History</a>
   </nav>
 </div></header>
+<div id="dnsbar" class="dnsbar" role="alert" hidden></div>
 <div class="wrap"><div id="banner"></div><main id="main"></main><footer id="foot"></footer></div>
 <script>
 "use strict";
@@ -602,6 +605,13 @@ function renderBanner() {
     }))));
 }
 const views = { machines, services, dns, certificate, settings: settingsView, history: historyView };
+// A red bar on every tab when split DNS sends the zone to an old address:
+// names on the tailnet stop resolving until it's fixed in the admin console.
+function renderDNSBar() {
+  const bar = $("dnsbar"), w = state.health && state.health.split_dns;
+  bar.hidden = !w;
+  bar.textContent = w ? "Split DNS for " + w.zone + " points at another address (" + w.route + "), but tarn is at " + w.want + ". In the Tailscale admin console, change the nameserver to " + w.want + "." : "";
+}
 function render(listOnly, force) {
   const main = $("main");
   if (listOnly) {
@@ -614,6 +624,7 @@ function render(listOnly, force) {
   const typing = a && a.tagName === "INPUT";
   const p = page();
   renderBanner();
+  renderDNSBar();
   pill();
   $("zone").textContent = (state.health && state.health.zone) || "";
   document.querySelectorAll("nav a").forEach(n => {

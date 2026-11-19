@@ -321,6 +321,9 @@ func run(c config, log *slog.Logger) error {
 		DNS:     func() any { return stats.Snapshot() },
 		Metrics: c.metrics,
 	}
+	watch := newSplitDNSWatch(c.tailscale, rt.zoneNow, store, log)
+	go watch.run(ctx, 5*time.Minute)
+	mgmt.SplitDNS = watch.current
 	if svc != nil {
 		mgmt.Services = func() any { return svc.List() }
 	}

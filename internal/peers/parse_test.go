@@ -245,3 +245,30 @@ func TestLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestControlServer(t *testing.T) {
+	cases := []struct {
+		name, json, suffix string
+		selfHosted         bool
+	}{
+		{"tailscale", `{"Self":{"ID":"1","DNSName":"box.tail1234.ts.net.","TailscaleIPs":["100.64.0.1"]},"CurrentTailnet":{"MagicDNSSuffix":"tail1234.ts.net"}}`, "tail1234.ts.net", false},
+		{"headscale", `{"Self":{"ID":"1","DNSName":"box.hs.example.com.","TailscaleIPs":["100.64.0.1"]},"CurrentTailnet":{"MagicDNSSuffix":"HS.Example.com."}}`, "hs.example.com", true},
+		{"no CurrentTailnet", `{"Self":{"ID":"1","DNSName":"box.hs.example.com.","TailscaleIPs":["100.64.0.1"]}}`, "hs.example.com", true},
+		{"unknown", `{"Self":{"ID":"1","HostName":"box","TailscaleIPs":["100.64.0.1"]}}`, "", false},
+	}
+	for _, c := range cases {
+		st, err := ParseStatus([]byte(c.json))
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if st.MagicDNSSuffix != c.suffix || st.SelfHosted() != c.selfHosted {
+			t.Errorf("%s: suffix %q selfHosted %v, want %q %v", c.name, st.MagicDNSSuffix, st.SelfHosted(), c.suffix, c.selfHosted)
+		}
+	}
+	st := &Status{MagicDNSSuffix: "hs.example.com"}
+	for zone, want := range map[string]bool{"hs.example.com": true, "t.hs.example.com.": true, "t.example.com": false, "xhs.example.com": false, "": false} {
+		if st.Overlaps(zone) != want {
+			t.Errorf("Overlaps(%q) = %v", zone, !want)
+		}
+	}
+}

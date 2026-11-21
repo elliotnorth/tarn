@@ -40,6 +40,9 @@ type Answers struct {
 type Server struct {
 	Code string // the one-time setup code
 	IP   string // tarn's tailnet IPv4, shown in the split DNS step
+	// Headscale is true when the tailnet isn't Tailscale's, so the split DNS
+	// step points at Headscale's config file instead of the admin console.
+	Headscale bool
 
 	// CheckZone normalizes and validates a zone, such as t.example.com.
 	CheckZone func(zone string) (string, error)
@@ -107,7 +110,7 @@ func (s *Server) Handler() http.Handler {
 		w.Write(page)
 	})
 	mux.HandleFunc("POST /setup/code", s.guard(func(w http.ResponseWriter, r *http.Request, req request) {
-		reply(w, http.StatusOK, map[string]any{"ip": s.IP})
+		reply(w, http.StatusOK, map[string]any{"ip": s.IP, "headscale": s.Headscale})
 	}))
 	mux.HandleFunc("POST /setup/token", s.guard(s.token))
 	mux.HandleFunc("POST /setup/finish", s.guard(s.finish))

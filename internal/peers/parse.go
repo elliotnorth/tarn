@@ -23,9 +23,12 @@ type node struct {
 }
 
 type status struct {
-	BackendState string          `json:"BackendState"`
-	Self         *node           `json:"Self"`
-	Peer         map[string]node `json:"Peer"`
+	BackendState   string          `json:"BackendState"`
+	Self           *node           `json:"Self"`
+	Peer           map[string]node `json:"Peer"`
+	CurrentTailnet *struct {
+		MagicDNSSuffix string `json:"MagicDNSSuffix"`
+	} `json:"CurrentTailnet"`
 }
 
 // ParseStatus parses `tailscale status --json` output (which is also what the
@@ -52,6 +55,14 @@ func ParseStatus(data []byte) (*Status, error) {
 	}
 
 	st := &Status{}
+	if raw.CurrentTailnet != nil {
+		st.MagicDNSSuffix = raw.CurrentTailnet.MagicDNSSuffix
+	}
+	if st.MagicDNSSuffix == "" && raw.Self != nil {
+		// Older clients: the suffix is the self name minus its first label.
+		_, st.MagicDNSSuffix, _ = strings.Cut(strings.TrimSuffix(strings.TrimSpace(raw.Self.DNSName), "."), ".")
+	}
+	st.MagicDNSSuffix = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(st.MagicDNSSuffix), "."))
 	add := func(n node, self bool) {
 		p, err := toPeer(n)
 		if err != nil {

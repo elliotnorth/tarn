@@ -43,6 +43,13 @@ func healthy() *Env {
 	}
 }
 
+// headscale makes the machine's tailnet a Headscale one with this base_domain.
+func headscale(e *Env, suffix string) {
+	st, _ := e.Tailscale(context.Background())
+	st.MagicDNSSuffix = suffix
+	e.Tailscale = func(context.Context) (*peers.Status, error) { return st, nil }
+}
+
 func find(t *testing.T, rs []Result, name string) Result {
 	t.Helper()
 	for _, r := range rs {
@@ -95,6 +102,11 @@ func TestBrokenMachines(t *testing.T) {
 		{"split DNS old IP", "Split DNS", "change the nameserver", func(e *Env) {
 			e.SplitDNS = func(context.Context) (string, error) { return "t.example.com -> 100.64.0.99\n", nil }
 		}},
+		{"split DNS missing on Headscale", "Split DNS", `nameservers: split:, set "t.example.com": ["100.64.0.1"]`, func(e *Env) {
+			headscale(e, "hs.example.com")
+			e.SplitDNS = func(context.Context) (string, error) { return "Split DNS Routes:\n", nil }
+		}},
+		{"zone inside MagicDNS", "Split DNS", "base_domain", func(e *Env) { headscale(e, "example.com") }},
 		{"upstream down", "Service app", "Is the app running", func(e *Env) {
 			e.Reach = func(context.Context, string) error { return errors.New("no answer") }
 		}},
@@ -163,5 +175,19 @@ func TestSplitDNSRoute(t *testing.T) {
 	}
 	if r, _ := SplitDNSRoute(text, "x.example.com", "100.64.0.1"); r != RouteMissing {
 		t.Errorf("missing zone: %v", r)
+	}
+}
+
+func TestHeadscalePasses(t *testing.T) {
+	e := healthy()
+	headscale(e, "hs.example.com")
+	rs := Run(context.Background(), e)
+	for _, r := range rs {
+		if r.Level != OK {
+			t.Errorf("%s: %+v", r.Name, r)
+		}
+	}
+	if r := find(t, rs, "Tailscale"); !strings.Contains(r.Detail, "self-hosted") {
+		t.Errorf("detail %q", r.Detail)
 	}
 }

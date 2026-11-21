@@ -118,6 +118,7 @@ type healthzResp struct {
 	DNS              any               `json:"dns,omitempty"`
 	TLS              any               `json:"tls,omitempty"`
 	SplitDNS         any               `json:"split_dns,omitempty"`
+	SelfHosted       bool              `json:"self_hosted,omitempty"` // Headscale or similar, not Tailscale
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +142,7 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 		resp.LastAttempt = &h.LastTry
 	}
 	if idx != nil {
-		resp.Collisions, resp.Skipped = idx.Collisions, idx.Skipped
+		resp.Collisions, resp.Skipped, resp.SelfHosted = idx.Collisions, idx.Skipped, idx.SelfHosted
 	}
 	if s.DNS != nil {
 		resp.DNS = s.DNS()

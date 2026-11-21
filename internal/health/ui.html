@@ -241,11 +241,13 @@ function machines() {
   )), q ? "No machines match that search." : "No machines yet.")));
   return out;
 }
+// tailnetName is where devices get renamed.
+function tailnetName() { return state.health && state.health.self_hosted ? "Headscale" : "Tailscale"; }
 function clashText(c) {
   const dropped = (c.dropped_ip && c.dropped_ip.length ? c.dropped_ip : c.losers).join(", ");
   return c.service
-    ? c.name + " is a service, so the device at " + dropped + " can't be reached by that name. Rename the device in Tailscale or the service here."
-    : c.name + " goes to " + (c.kept_ip || c.winner) + ". Also named " + c.name + ", and not reachable by it: " + dropped + ". Rename one in Tailscale.";
+    ? c.name + " is a service, so the device at " + dropped + " can't be reached by that name. Rename the device in " + tailnetName() + " or the service here."
+    : c.name + " goes to " + (c.kept_ip || c.winner) + ". Also named " + c.name + ", and not reachable by it: " + dropped + ". Rename one in " + tailnetName() + ".";
 }
 function signInForm() {
   const input = h("input", { type: "password", placeholder: "Password", "aria-label": "Password", autocomplete: "current-password", required: "required" });
@@ -608,7 +610,7 @@ function renderBanner() {
     try {
       await send("POST", "/settings/keep", { password: pw ? pw.value : "" });
       state.keepError = "";
-      state.message = p.key === "zone" ? "Done. Open this page on the new zone, then change split DNS in the Tailscale admin console." : "Kept.";
+      state.message = p.key === "zone" ? "Done. Open this page on the new zone, then change split DNS " + (state.health && state.health.self_hosted ? "in Headscale's config.yaml." : "in the Tailscale admin console.") : "Kept.";
       await load(true);
     } catch (e) { state.keepError = e.message; render(false, true); }
   });
@@ -624,11 +626,11 @@ function renderBanner() {
 }
 const views = { machines, services, dns, certificate, settings: settingsView, history: historyView };
 // A red bar on every tab when split DNS sends the zone to an old address:
-// names on the tailnet stop resolving until it's fixed in the admin console.
+// names on the tailnet stop resolving until it's fixed in the admin console or Headscale's config.
 function renderDNSBar() {
   const bar = $("dnsbar"), w = state.health && state.health.split_dns;
   bar.hidden = !w;
-  bar.textContent = w ? "Split DNS for " + w.zone + " points at another address (" + w.route + "), but tarn is at " + w.want + ". In the Tailscale admin console, change the nameserver to " + w.want + "." : "";
+  bar.textContent = w ? "Split DNS for " + w.zone + " points at another address (" + w.route + "), but tarn is at " + w.want + ". " + (w.fix || "In the Tailscale admin console, change the nameserver to " + w.want) + "." : "";
 }
 function render(listOnly, force) {
   const main = $("main");

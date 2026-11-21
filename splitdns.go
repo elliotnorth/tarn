@@ -18,6 +18,7 @@ type splitDNSWarning struct {
 	Zone    string    `json:"zone"`
 	Route   string    `json:"route"` // the route as `tailscale dns status` prints it
 	Want    string    `json:"want"`  // tarn's address
+	Fix     string    `json:"fix"`   // what to change, and where
 	Checked time.Time `json:"checked"`
 }
 
@@ -56,6 +57,8 @@ func selfIP(store *index.Store) string {
 
 func (w *splitDNSWatch) check(ctx context.Context, now time.Time) {
 	ip, zone := selfIP(w.store), w.zone()
+	idx := w.store.Load()
+	fix := doctor.SplitDNSFix(idx != nil && idx.SelfHosted, true, zone, ip)
 	if ip == "" || zone == "" {
 		return
 	}
@@ -71,9 +74,9 @@ func (w *splitDNSWatch) check(ctx context.Context, now time.Time) {
 		return
 	}
 	if old := w.warn.Load(); old == nil || old.Route != line || old.Want != ip {
-		w.log.Warn("split DNS points at another address; change the nameserver in the Tailscale admin console", "zone", zone, "route", line, "want", ip)
+		w.log.Warn("split DNS points at another address", "zone", zone, "route", line, "want", ip, "fix", fix)
 	}
-	w.warn.Store(&splitDNSWarning{Zone: zone, Route: line, Want: ip, Checked: now})
+	w.warn.Store(&splitDNSWarning{Zone: zone, Route: line, Want: ip, Fix: fix, Checked: now})
 }
 
 func (w *splitDNSWatch) run(ctx context.Context, every time.Duration) {

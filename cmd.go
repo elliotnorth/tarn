@@ -146,7 +146,11 @@ func writeStatus(out io.Writer, h *doctor.Health, services []doctor.Service, ser
 		if c.Service {
 			fmt.Fprintf(out, "Name clash:   the service %q hides a device of that name. Rename one of them\n", c.Name)
 		} else {
-			fmt.Fprintf(out, "Name clash:   two devices want %q. Rename one in the Tailscale admin console\n", c.Name)
+			where := "in the Tailscale admin console"
+			if h.SelfHosted {
+				where = "with: headscale nodes rename"
+			}
+			fmt.Fprintf(out, "Name clash:   two devices want %q. Rename one %s\n", c.Name, where)
 		}
 	}
 	for _, s := range h.Skipped {

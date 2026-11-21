@@ -429,7 +429,7 @@ func (c *controller) Preview(ctx context.Context, req health.ChangeRequest) (hea
 		c.certNotes(&p, value, c.current(keyStaging) == "true")
 		p.Notes = append(p.Notes,
 			"Services keep their short names under the new zone.",
-			"After Keep, change split DNS in the Tailscale admin console yourself. Tarn never touches the tailnet.",
+			"After Keep, change split DNS "+c.dnsSettings()+" yourself. Tarn never touches the tailnet.",
 			"Both names work until you press Keep. Keep ends the old one, so open the page on the new name afterwards.")
 	case keyStaging:
 		staging := value == "true"
@@ -444,7 +444,7 @@ func (c *controller) Preview(ctx context.Context, req health.ChangeRequest) (hea
 			shown = "this machine's tailnet IP"
 		}
 		p.Summary = "Answer DNS on " + shown + "."
-		p.Notes = append(p.Notes, "The old address keeps answering until you press Keep.", "If the address changes, update the nameserver in the Tailscale admin console.")
+		p.Notes = append(p.Notes, "The old address keeps answering until you press Keep.", "If the address changes, update the nameserver "+c.dnsSettings()+".")
 	case keyPassword:
 		p.Summary = "Change the page password."
 		p.Notes = append(p.Notes, "Every other signed-in browser is signed out.", "Keep asks for the new password, to prove you have it.")
@@ -452,6 +452,14 @@ func (c *controller) Preview(ctx context.Context, req health.ChangeRequest) (hea
 		p.Summary = "This applies immediately."
 	}
 	return p, nil
+}
+
+// dnsSettings says where the tailnet's split DNS is set.
+func (c *controller) dnsSettings() string {
+	if idx := c.store.Load(); idx != nil && idx.SelfHosted {
+		return "in Headscale's config.yaml"
+	}
+	return "in the Tailscale admin console"
 }
 
 func (c *controller) certNotes(p *health.Preview, zone string, staging bool) {

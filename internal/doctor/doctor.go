@@ -45,8 +45,9 @@ type Health struct {
 		Name    string `json:"name"`
 		Service bool   `json:"service"`
 	} `json:"collisions"`
-	Skipped []string  `json:"skipped"`
-	TLS     *TLSState `json:"tls"`
+	Skipped    []string  `json:"skipped"`
+	SelfHosted bool      `json:"self_hosted"`
+	TLS        *TLSState `json:"tls"`
 }
 
 // TLSState is /healthz's certificate section.
@@ -118,7 +119,11 @@ func Run(ctx context.Context, e *Env) []Result {
 		add(Result{Name: "Tailscale", Level: Fail, Detail: "this machine has no tailnet IPv4 address", Fix: "Run: sudo tailscale up"})
 	default:
 		selfIP = st.Self.IPv4[0].String()
-		add(Result{Name: "Tailscale", Detail: "connected as " + selfIP})
+		detail := "connected as " + selfIP
+		if st.SelfHosted() {
+			detail += " on a self-hosted control server (" + st.MagicDNSSuffix + ")"
+		}
+		add(Result{Name: "Tailscale", Detail: detail})
 	}
 
 	health, healthErr := e.Health(ctx)
@@ -140,7 +145,7 @@ func Run(ctx context.Context, e *Env) []Result {
 	}
 
 	add(dnsPort(ctx, e, selfIP, zone, healthErr == nil))
-	add(splitDNS(ctx, e, zone, selfIP))
+	add(splitDNS(ctx, e, st, zone, selfIP))
 	if healthErr == nil && health.TLS != nil {
 		add(certificate(e, health.TLS))
 	}
@@ -181,10 +186,19 @@ func dnsPort(ctx context.Context, e *Env, selfIP, zone string, running bool) Res
 	return r
 }
 
-func splitDNS(ctx context.Context, e *Env, zone, ip string) Result {
+func splitDNS(ctx context.Context, e *Env, st *peers.Status, zone, ip string) Result {
 	r := Result{Name: "Split DNS"}
 	if zone == "" {
 		r.Level, r.Detail = Warn, "skipped, zone not known"
+		return r
+	}
+	selfHosted := st != nil && st.SelfHosted()
+	if st != nil && st.Overlaps(zone) {
+		r.Level, r.Detail = Fail, fmt.Sprintf("%s is inside the tailnet's MagicDNS domain %s, which MagicDNS answers itself", zone, st.MagicDNSSuffix)
+		r.Fix = "Use a zone outside " + st.MagicDNSSuffix + ", such as a subdomain of a domain you own on Cloudflare"
+		if selfHosted {
+			r.Fix = "Use a zone outside Headscale's base_domain (" + st.MagicDNSSuffix + "), such as a sibling of it"
+		}
 		return r
 	}
 	text, err := e.SplitDNS(ctx)
@@ -195,15 +209,31 @@ func splitDNS(ctx context.Context, e *Env, zone, ip string) Result {
 	switch route, line := SplitDNSRoute(text, zone, ip); route {
 	case RouteOther:
 		r.Level, r.Detail = Fail, "the route points at another address: "+line
-		r.Fix = fmt.Sprintf("In the Tailscale admin console, change the nameserver for %s to %s", zone, ip)
+		r.Fix = SplitDNSFix(selfHosted, true, zone, ip)
 		return r
 	case RouteOK:
 		r.Detail = "route for " + zone + " is present"
 		return r
 	}
 	r.Level, r.Detail = Fail, "no route for "+zone
-	r.Fix = fmt.Sprintf("In the Tailscale admin console, under DNS, add a custom nameserver %s, turn on Restrict to domain, and enter %s", ip, zone)
+	r.Fix = SplitDNSFix(selfHosted, false, zone, ip)
 	return r
+}
+
+// SplitDNSFix says how to send zone's queries to ip: in the Tailscale admin
+// console, or in Headscale's config file when the tailnet is self-hosted.
+// change is for a route that exists but points at another address.
+func SplitDNSFix(selfHosted, change bool, zone, ip string) string {
+	if ip == "" {
+		ip = "<tarn's tailnet IP>"
+	}
+	switch {
+	case selfHosted:
+		return fmt.Sprintf(`In Headscale's config.yaml, under dns: nameservers: split:, set "%s": ["%s"], then restart Headscale`, zone, ip)
+	case change:
+		return fmt.Sprintf("In the Tailscale admin console, change the nameserver for %s to %s", zone, ip)
+	}
+	return fmt.Sprintf("In the Tailscale admin console, under DNS, add a custom nameserver %s, turn on Restrict to domain, and enter %s", ip, zone)
 }
 
 // Route is what `tailscale dns status` says about tarn's zone.

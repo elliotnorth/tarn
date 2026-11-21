@@ -42,6 +42,9 @@ type Index struct {
 	byName     map[string]int
 	Collisions []Collision
 	Skipped    []string
+	// SelfHosted is true on a tailnet run by Headscale or another non-Tailscale
+	// control server, so instructions can point at its config instead.
+	SelfHosted bool
 }
 
 // Build creates an index from a parsed status.
@@ -78,7 +81,7 @@ func Build(st *peers.Status, now time.Time, services ...string) *Index {
 		}
 	}
 
-	idx := &Index{Built: now, byName: make(map[string]int, len(groups)), Skipped: st.Skipped}
+	idx := &Index{Built: now, byName: make(map[string]int, len(groups)), Skipped: st.Skipped, SelfHosted: st.SelfHosted()}
 	names := make([]string, 0, len(groups)+len(isService))
 	for n := range groups {
 		names = append(names, n)

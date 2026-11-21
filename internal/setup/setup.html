@@ -38,7 +38,8 @@ button.ghost { background: transparent; color: var(--text); border: 1px solid va
 .ok { color: var(--good); }
 ol { padding-left: 20px; margin: 0 0 16px; }
 li { margin-bottom: 8px; }
-code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--badge); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--badge); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { padding: 8px 10px; margin: 8px 0 0; overflow-x: auto; white-space: pre; }
 a { color: var(--accent); }
 </style>
 </head>
@@ -92,7 +93,7 @@ const steps = [
       form([h("label", null, "Setup code", c)], "Continue", async () => {
         s.code = c.value.trim();
         const r = await post("/setup/code", {});
-        s.ip = r.ip; s.step = 1;
+        s.ip = r.ip; s.headscale = !!r.headscale; s.step = 1;
       })];
   },
   function cloudflare() {
@@ -128,7 +129,10 @@ const steps = [
     const page = "https://tarn." + s.zone;
     return [h("h1", null, "Almost there"), h("p", { class: "sub" }, "tarn is restarting with your settings and getting a test certificate."),
       h("div", { class: "card" }, h("ol", null,
-        h("li", null, "In the ", h("a", { href: "https://login.tailscale.com/admin/dns", rel: "noreferrer", target: "_blank" }, "Tailscale admin console"), ", under DNS, Nameservers, add a Custom nameserver ", h("code", null, s.ip || "this machine's tailnet IP"), ", turn on Restrict to domain, and enter ", h("code", null, s.zone), "."),
+        s.headscale
+          ? h("li", null, "In Headscale's config.yaml, add this under ", h("code", null, "dns:"), ", next to any nameservers already there, then restart Headscale:",
+              h("pre", null, "nameservers:\n  split:\n    " + s.zone + ":\n      - " + (s.ip || "<this machine's tailnet IP>")))
+          : h("li", null, "In the ", h("a", { href: "https://login.tailscale.com/admin/dns", rel: "noreferrer", target: "_blank" }, "Tailscale admin console"), ", under DNS, Nameservers, add a Custom nameserver ", h("code", null, s.ip || "this machine's tailnet IP"), ", turn on Restrict to domain, and enter ", h("code", null, s.zone), "."),
         h("li", null, "In a minute, open ", h("a", { href: page, rel: "noreferrer" }, page), " from a device on your tailnet. The browser warns about the certificate until you switch to a trusted one; the status page shows how."),
         h("li", null, "Sign in with your password and add your first service.")),
         h("p", { class: "help" }, "This setup page has closed. tarn doctor on the machine checks every step."))];

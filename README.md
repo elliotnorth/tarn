@@ -12,8 +12,10 @@ after:   https://nextcloud.t.example.com
 
 No ports open to the internet, and no manual certificate work.
 
-It's young. I run it on my own tailnet every day, but expect rough edges, and
-[Headscale](https://headscale.net) isn't supported yet. Issues and PRs are welcome.
+It's young. I run it on my own tailnet every day, but expect rough edges.
+[Headscale](https://headscale.net) support is new and not yet tested on a real
+Headscale tailnet; see [docs/ADVANCED.md](docs/ADVANCED.md#headscale). Issues and PRs
+are welcome.
 
 ## How it works
 
@@ -32,7 +34,7 @@ about 9 MB of RAM and almost no CPU on a real tailnet.
 
 ## What you'll need
 
-- A **Tailscale tailnet**, with admin access to its DNS settings
+- A **Tailscale tailnet** (or Headscale), with admin access to its DNS settings
 - An **always-on Linux machine** in that tailnet, with sudo
 - **Port 53 free** on its tailnet address, and 443 too for the proxy
 - For HTTPS: a **domain** with its **DNS on Cloudflare** (free plan is fine). No
@@ -55,7 +57,8 @@ You don't need a public or static IP, or port forwarding.
 3. Open that address from another device on your tailnet. Enter the code, your zone
    (such as `t.example.com`), the token and a password for the status page.
 4. In the [Tailscale admin console](https://login.tailscale.com/admin/dns), add the
-   nameserver the last page shows, with **Restrict to domain** on.
+   nameserver the last page shows, with **Restrict to domain** on. On Headscale, the
+   last page shows what to add to its `config.yaml` instead.
 5. Open `https://tarn.t.example.com`, switch to a trusted certificate, and add your
    services.
 

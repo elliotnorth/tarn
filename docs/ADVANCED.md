@@ -77,6 +77,8 @@ From another device, run `ping laptop.t.example.com`. On Windows use `ping` or
 `Resolve-DnsName`, because `nslookup` ignores split DNS. Devices are named as in
 the admin console, and new ones appear within 30 seconds.
 
+On Headscale, see [Headscale](#headscale) instead.
+
 **That's DNS done.** The rest is for HTTPS.
 
 ### 4. Get a certificate
@@ -162,6 +164,39 @@ sign URLs: most apps behind `tailscale serve` need the default.
 - **Binding Docker to `0.0.0.0` opens the port on your LAN,** and Docker's published
   ports skip ordinary `ufw` rules. Bind the tailnet IP, or filter in `DOCKER-USER`.
 - Signed links for the old name stop working, and apps need to sign in again.
+
+## Headscale
+
+tarn reads the device list from the Tailscale client, so it works the same on a
+[Headscale](https://headscale.net) tailnet. This is new and hasn't been tested on a
+real Headscale tailnet yet, so please report what you find.
+
+tarn notices Headscale from the tailnet's DNS domain (anything other than
+`*.ts.net`). The setup wizard, `tarn doctor` and the status page then point at
+Headscale's config file instead of the Tailscale admin console.
+
+**Split DNS.** Headscale has no admin console, so add the route to its
+`config.yaml` (Headscale 0.23 or later), next to any nameservers already there:
+
+```yaml
+dns:
+  nameservers:
+    split:
+      t.example.com:
+        - 100.x.y.z
+```
+
+Restart Headscale, and check from a device with `tailscale dns status`. Devices
+need `--accept-dns=true`, which is the default.
+
+**Pick a zone outside `base_domain`.** MagicDNS answers every name under Headscale's
+`base_domain` itself, so tarn would never be asked. If `base_domain` is
+`hs.example.com`, use `t.example.com`, not `t.hs.example.com`. The wizard and
+`tarn doctor` both refuse a zone inside it.
+
+**Renaming devices.** Names come from Headscale, so rename with
+`headscale nodes rename`. Two devices with the same name are reported as a name
+clash, as on Tailscale.
 
 ## Options
 

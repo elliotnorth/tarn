@@ -146,8 +146,14 @@ func runSetup(c config, log *slog.Logger, src peers.Source) error {
 	}
 
 	srv := &setup.Server{
-		Code: code, IP: ip, MinPassword: minAdminPassword, Log: log,
-		CheckZone:  checkZone,
+		Code: code, IP: ip, Headscale: st.SelfHosted(), MinPassword: minAdminPassword, Log: log,
+		CheckZone: func(zone string) (string, error) {
+			zone, err := checkZone(zone)
+			if err == nil && st.Overlaps(zone) {
+				err = fmt.Errorf("%s is inside your tailnet's own DNS domain, %s, which answers those names itself. Use a zone outside it", zone, st.MagicDNSSuffix)
+			}
+			return zone, err
+		},
 		CheckToken: checkSetupToken,
 		Finish:     func(a setup.Answers) error { return finishSetup(c, a, bcrypt.DefaultCost+2) },
 	}

@@ -191,3 +191,48 @@ func TestHeadscalePasses(t *testing.T) {
 		t.Errorf("detail %q", r.Detail)
 	}
 }
+
+// Without Tailscale, the Tailscale, TUN and split DNS checks never fail, and
+// every DNS address is checked.
+func TestWithoutTailscale(t *testing.T) {
+	e := healthy()
+	e.HasTUN = func() bool { return false }
+	e.Tailscale = func(context.Context) (*peers.Status, error) { return nil, errors.New("not installed") }
+	e.SplitDNS = func(context.Context) (string, error) { return "", errors.New("not installed") }
+	var checked []string
+	e.CheckDNS = func(_ context.Context, addr, _ string) error { checked = append(checked, addr); return nil }
+	h, _ := e.Health(context.Background())
+	h.Mode = &Mode{Source: "none", DNS: []string{"192.168.2.24:53", "100.64.0.1:53"}, Proxy: []string{"192.168.2.24:443"}, Answer: []string{"192.168.2.24"}}
+	e.Health = func(context.Context) (*Health, error) { return h, nil }
+
+	rs := Run(context.Background(), e)
+	if Failed(rs) {
+		t.Fatalf("%+v", rs)
+	}
+	if r := find(t, rs, "Tailscale"); !strings.Contains(r.Detail, "not used") {
+		t.Errorf("Tailscale: %q", r.Detail)
+	}
+	if r := find(t, rs, "Split DNS"); !strings.Contains(r.Detail, "server=/t.example.com/192.168.2.24") {
+		t.Errorf("Split DNS: %q", r.Detail)
+	}
+	if len(checked) != 2 {
+		t.Errorf("checked %v", checked)
+	}
+	for _, r := range rs {
+		if r.Name == "TUN device" {
+			t.Error("TUN checked")
+		}
+	}
+
+	// Not running: the config says -source none, so still no Tailscale checks.
+	e.Health = func(context.Context) (*Health, error) { return nil, errors.New("refused") }
+	e.Source, e.Listen = "none", "192.168.2.24:53"
+	e.PortFree = func(string) error { return errors.New("address already in use") }
+	rs = Run(context.Background(), e)
+	if r := find(t, rs, "DNS port"); r.Level != Fail || !strings.Contains(r.Fix, "ss -lunp") {
+		t.Errorf("DNS port: %+v", r)
+	}
+	if r := find(t, rs, "Tailscale"); r.Level != OK {
+		t.Errorf("Tailscale: %+v", r)
+	}
+}

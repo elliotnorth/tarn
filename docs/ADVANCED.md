@@ -8,6 +8,7 @@ everything else.
 - [Using nginx or traefik instead](#using-nginx-or-traefik-instead)
 - [Apps that sign URLs (S3, MinIO, Ente)](#apps-that-sign-urls-s3-minio-ente)
 - [Headscale](#headscale)
+- [Without Tailscale (WireGuard or a LAN)](#without-tailscale-wireguard-or-a-lan)
 - [The status page](#the-status-page)
 - [Forgot the page password](#forgot-the-page-password)
 - [Options](#options)
@@ -229,6 +230,70 @@ Check it from a device with `tailscale dns status`. Devices need
 
 **Rename devices** with `headscale nodes rename`.
 
+## Without Tailscale (WireGuard or a LAN)
+
+tarn can run with no Tailscale at all, for example on a plain WireGuard hub or a
+home LAN. It then serves the names in the services file, plus any devices you list
+in a hosts file. Certificates work exactly the same.
+
+Add these to tarn's command line (see
+[Changing tarn's command line](#changing-tarns-command-line)), using the machine's
+own address in place of `192.168.1.10`:
+
+```
+-source none -listen 192.168.1.10:53 -proxy-listen 192.168.1.10 -answer 192.168.1.10
+```
+
+| Flag | What it does |
+|------|--------------|
+| `-source none` | Don't read a device list from Tailscale |
+| `-listen` | The address to answer DNS on |
+| `-proxy-listen` | The address for HTTPS (port 443 unless you give one) |
+| `-answer` | The IPv4 address service names resolve to, usually the same machine |
+| `-hosts-file` | Optional. Devices to answer for, one `name address` per line |
+
+A hosts file looks like this. tarn re-reads it on every refresh, so changes need no
+restart:
+
+```
+# name     addresses
+laptop     10.8.0.2
+nas        192.168.1.20  fd00::20
+```
+
+**Point your DNS at tarn for the zone only.** tarn answers only its own zone and
+refuses everything else, so it can't be your devices' only DNS server. Forward the
+zone to it from the DNS server they already use:
+
+- dnsmasq or Pi-hole: `server=/t.example.com/192.168.1.10`
+- Unbound: a `forward-zone` for `t.example.com` with `forward-addr: 192.168.1.10`
+
+WireGuard clients then use that DNS server (`DNS = ` in their config), not tarn.
+
+**Upstreams:** use LAN or WireGuard addresses in the services file, such as
+`http://192.168.1.20:8080`. `ts.net` names stop working without Tailscale.
+
+### Moving from Tailscale
+
+tarn can answer on both networks while you move devices over. Keep Tailscale
+running, and add:
+
+```
+-listen-extra 192.168.1.10:53 -proxy-listen tailnet,192.168.1.10
+```
+
+`tailnet` stands for the tailnet IP. tarn now answers DNS and HTTPS on both
+addresses. Service names still resolve to the tailnet IP until you add `-answer`,
+so devices on WireGuard need `-answer 192.168.1.10`. A name resolves to one place,
+so switch `-answer` when most devices have moved.
+
+When everything has moved, change to the `-source none` line above and stop
+Tailscale. The certificate stays as it is, and nothing is issued again.
+
+These settings can also go in the config file as `listen_extra`, `proxy_listen`,
+`answer`, `hosts_file` and `source`. Flags win over the file, and the status page
+can't change them.
+
 ## The status page
 
 It's at `https://tarn.t.example.com` on the tailnet, and `http://127.0.0.1:9580/` on
@@ -272,7 +337,9 @@ Saving services from the page rewrites the services file, so comments in it are 
 |------|---------|--------------|
 | `-zone` | *(required)* | The subdomain to serve |
 | `-listen` | tailnet IPv4, port 53 | DNS address |
-| `-source` | `cli` | `cli`, or `localapi` to read tailscaled's socket (less CPU on tiny hosts) |
+| `-listen-extra` | | More DNS addresses, comma-separated. `tailnet` is the tailnet IP |
+| `-source` | `cli` | `cli`, `localapi` to read tailscaled's socket (less CPU on tiny hosts), or `none` for no Tailscale |
+| `-hosts-file` | | Devices to answer for, one `name address...` per line |
 | `-tailscale` | `tailscale` | Path to the binary, for `cli` |
 | `-socket` | `/var/run/tailscale/tailscaled.sock` | Socket, for `localapi` |
 | `-interval` | `30s` | How often to re-read the device list |
@@ -283,6 +350,8 @@ Saving services from the page rewrites the services file, so comments in it are 
 | `-status-name` | `tarn` | Name of the status page on the tailnet. Empty turns it off |
 | `-cloudflare-token-file` | | Cloudflare token. Setting it turns on certificates |
 | `-services-file` | | Services to proxy on port 443 |
+| `-proxy-listen` | tailnet IPv4, port 443 | HTTPS addresses, comma-separated. `tailnet` is the tailnet IP |
+| `-answer` | tailnet IPv4 | IPv4 addresses that service names resolve to |
 | `-export-dir` | | Also write the certificate here |
 | `-admin-password-file` | | Password for changing things from the status page |
 | `-config` | | tarn's config file, needed to change settings from the page |

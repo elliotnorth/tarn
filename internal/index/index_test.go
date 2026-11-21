@@ -148,3 +148,27 @@ func TestStoreKeepsLastGood(t *testing.T) {
 		t.Errorf("Health after recovery = %+v", h)
 	}
 }
+
+func TestServicesAtAnswer(t *testing.T) {
+	lan := netip.MustParseAddr("192.168.2.24")
+	hosts, _ := peers.ParseHosts([]byte("phone 10.8.0.2\nvault 10.8.0.9\n"))
+	idx := Build(&peers.Status{Peers: hosts, ServiceIPv4: []netip.Addr{lan}}, time.Now(), "vault", "nextcloud")
+	for _, name := range []string{"vault", "nextcloud"} {
+		r, ok := idx.Lookup(name)
+		if !ok || !r.Service || len(r.IPv4) != 1 || r.IPv4[0] != lan {
+			t.Errorf("%s: %+v %v", name, r, ok)
+		}
+	}
+	if r, ok := idx.Lookup("phone"); !ok || r.IPv4[0].String() != "10.8.0.2" {
+		t.Errorf("phone: %+v %v", r, ok)
+	}
+	if len(idx.Collisions) != 1 || idx.Collisions[0].Name != "vault" || !idx.Collisions[0].Service {
+		t.Errorf("collisions %+v", idx.Collisions)
+	}
+
+	// Without -answer and without Tailscale there is nowhere to point services.
+	idx = Build(&peers.Status{Peers: hosts}, time.Now(), "nextcloud")
+	if _, ok := idx.Lookup("nextcloud"); ok {
+		t.Error("nextcloud resolved with no address")
+	}
+}

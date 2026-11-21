@@ -36,6 +36,7 @@ type Server struct {
 	Services     func() any           // proxied services for /services; nil when none
 	TLS          func() any           // certificate state for /healthz; nil when off
 	SplitDNS     func() any           // a wrong split DNS route for /healthz, or nil
+	Mode         func() any           // device list source and listen addresses for /healthz
 	Now          func() time.Time     // for tests; time.Now if nil
 	Admin        *Admin               // changes from the status page; nil when off
 	AdminWarning string               // why editing is off, shown on the page
@@ -119,6 +120,7 @@ type healthzResp struct {
 	TLS              any               `json:"tls,omitempty"`
 	SplitDNS         any               `json:"split_dns,omitempty"`
 	SelfHosted       bool              `json:"self_hosted,omitempty"` // Headscale or similar, not Tailscale
+	Mode             any               `json:"mode,omitempty"`
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +154,9 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.SplitDNS != nil {
 		resp.SplitDNS = s.SplitDNS()
+	}
+	if s.Mode != nil {
+		resp.Mode = s.Mode()
 	}
 
 	code := http.StatusOK

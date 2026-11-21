@@ -27,6 +27,9 @@ type Status struct {
 	// MagicDNSSuffix is the tailnet's own DNS domain, lowercase with no
 	// trailing dot: <tailnet>.ts.net on Tailscale, base_domain on Headscale.
 	MagicDNSSuffix string
+	// ServiceIPv4 is where service names resolve, set by -answer. When it is
+	// empty they resolve to Self's IPv4 addresses.
+	ServiceIPv4 []netip.Addr
 }
 
 // SelfHosted reports whether the tailnet runs on a control server other than

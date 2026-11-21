@@ -98,8 +98,21 @@ func runStatus(args []string, out io.Writer) int {
 func writeStatus(out io.Writer, h *doctor.Health, services []doctor.Service, serr error, now time.Time) {
 	fmt.Fprintf(out, "tarn %s: %s\n", h.Version, h.Status)
 	fmt.Fprintf(out, "Zone:         %s (%d names)\n", h.Zone, h.Records)
-	if h.LastRefresh != nil {
+	m := h.Mode
+	switch {
+	case m != nil && m.Source == "none":
+		fmt.Fprintln(out, "Device list:  none, running without Tailscale (-source none)")
+	case h.LastRefresh != nil:
 		fmt.Fprintf(out, "Device list:  read %s ago\n", now.Sub(*h.LastRefresh).Round(time.Second))
+	}
+	if m != nil {
+		fmt.Fprintf(out, "DNS on:       %s\n", strings.Join(m.DNS, ", "))
+		if len(m.Proxy) > 0 {
+			fmt.Fprintf(out, "HTTPS on:     %s\n", strings.Join(m.Proxy, ", "))
+		}
+		if len(m.Answer) > 0 {
+			fmt.Fprintf(out, "Services at:  %s\n", strings.Join(m.Answer, ", "))
+		}
 	}
 	if h.LastError != "" {
 		fmt.Fprintf(out, "              last error: %s\n", h.LastError)
@@ -196,7 +209,7 @@ func realEnv(o cliOptions) *doctor.Env {
 		ServerTime: internetTime,
 	}
 	if v, ok, err := settings.Load(o.config); err == nil && ok {
-		env.Zone, env.Listen = v.Zone, v.Listen
+		env.Zone, env.Listen, env.Source = v.Zone, v.Listen, v.Source
 	}
 	return env
 }

@@ -31,6 +31,13 @@ type Values struct {
 	ServicesFile    string `json:"services_file,omitempty"`
 	ExportDir       string `json:"export_dir,omitempty"`
 
+	// For running without Tailscale, or beside it. Set by flag or by hand,
+	// never from the page. Lists are comma-separated, as the flags take them.
+	ListenExtra string `json:"listen_extra,omitempty"` // more DNS addresses
+	ProxyListen string `json:"proxy_listen,omitempty"` // HTTPS proxy addresses; empty: the tailnet IP
+	Answer      string `json:"answer,omitempty"`       // IPv4s service names resolve to; empty: the tailnet IP
+	HostsFile   string `json:"hosts_file,omitempty"`   // fixed device records
+
 	// Hashes only. The records token is shown once and never stored.
 	RecordsTokenSHA256 string `json:"records_token_sha256,omitempty"`
 	AdminPasswordHash  string `json:"admin_password_hash,omitempty"`

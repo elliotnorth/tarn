@@ -91,3 +91,19 @@ func TestBadAdminPasswordFileDisablesEditing(t *testing.T) {
 		t.Errorf("no file: %q %q", got, warning)
 	}
 }
+
+func TestWriteStatusWithoutTailscale(t *testing.T) {
+	now := time.Date(2026, 11, 8, 12, 0, 0, 0, time.UTC)
+	h := &doctor.Health{Status: "ok", Version: "v1", Zone: "t.example.com", LastRefresh: &now,
+		Mode: &doctor.Mode{Source: "none", DNS: []string{"192.168.2.24:53"}, Proxy: []string{"192.168.2.24:443"}, Answer: []string{"192.168.2.24"}}}
+	var b bytes.Buffer
+	writeStatus(&b, h, nil, nil, now)
+	for _, want := range []string{"running without Tailscale", "DNS on:       192.168.2.24:53", "HTTPS on:     192.168.2.24:443", "Services at:  192.168.2.24"} {
+		if !strings.Contains(b.String(), want) {
+			t.Errorf("missing %q in:\n%s", want, b.String())
+		}
+	}
+	if strings.Contains(b.String(), "read 0s ago") {
+		t.Errorf("device list age shown:\n%s", b.String())
+	}
+}

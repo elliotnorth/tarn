@@ -53,12 +53,13 @@ type Index struct {
 // ID keeps the name and the others are dropped and reported. Offline
 // nodes are kept, since tailnet IPs are stable.
 //
-// Each service name resolves to this node's own IPv4 address, where the proxy
-// listens, and replaces any device of the same name. There is no AAAA for
-// a service because the proxy is IPv4-only, like the DNS listener.
+// Each service name resolves to st.ServiceIPv4 if set (-answer), otherwise to
+// this node's own IPv4 address, where the proxy listens. It replaces any
+// device of the same name. There is no AAAA for a service because the proxy
+// is IPv4-only, like the DNS listener.
 func Build(st *peers.Status, now time.Time, services ...string) *Index {
-	var proxyIPs []netip.Addr
-	if st.Self != nil {
+	proxyIPs := st.ServiceIPv4
+	if len(proxyIPs) == 0 && st.Self != nil {
 		proxyIPs = st.Self.IPv4
 	}
 	isService := map[string]bool{}

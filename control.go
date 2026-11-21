@@ -136,6 +136,7 @@ type controller struct {
 	listenAddr     string
 	selfListen     string
 	listenAuto     bool
+	tailnetBound   bool // the proxy or an extra DNS address is on the tailnet IP
 	lastRefresh    time.Time
 	lastCloudflare time.Time
 	stopFns        sync.Map // *dns.Server -> func()
@@ -174,7 +175,7 @@ func (c *controller) names() []string {
 func (c *controller) watched() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.listenAuto || c.svc != nil {
+	if c.listenAuto || c.tailnetBound {
 		return c.selfListen
 	}
 	return ""
@@ -309,6 +310,9 @@ func (c *controller) validate(ctx context.Context, req health.ChangeRequest) (st
 		}
 		return strconv.Itoa(n), nil
 	case keySource:
+		if value == "none" || c.current(keySource) == "none" {
+			return "", errors.New("running without Tailscale is set with -source in the config file or on the command line, not from the page")
+		}
 		if value != "cli" && value != "localapi" {
 			return "", errors.New(`the source must be "cli" or "localapi"`)
 		}
@@ -368,6 +372,12 @@ func (c *controller) validate(ctx context.Context, req health.ChangeRequest) (st
 
 func (c *controller) validateListen(value string) (string, error) {
 	if value == "" {
+		c.mu.Lock()
+		self := c.selfListen
+		c.mu.Unlock()
+		if self == "" {
+			return "", errors.New("there's no tailnet IP to default to, so enter an address")
+		}
 		return "", nil
 	}
 	host, port, err := net.SplitHostPort(value)

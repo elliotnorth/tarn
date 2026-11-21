@@ -434,7 +434,7 @@ function pill() {
 const SETTINGS = {
   ttl: { label: "DNS answer lifetime", help: "Seconds devices may cache an answer. 0 to 86400.", unit: " seconds" },
   interval: { label: "Device list refresh", help: "Seconds between reads of the device list. 5 to 3600.", unit: " seconds" },
-  source: { label: "Device list source", choices: [["cli", "tailscale command"], ["localapi", "tailscaled socket"]] },
+  source: { label: "Device list source", choices: [["cli", "tailscale command"], ["localapi", "tailscaled socket"], ["none", "none (no Tailscale)"]] },
   acme_email: { label: "Let's Encrypt contact", help: "Optional. Sent with the next certificate request." },
   zone: { label: "Zone", risky: true, help: "Every name moves to this subdomain." },
   listen: { label: "DNS address", risky: true, help: "IP on this machine, with optional port. Leave empty for the tailnet IP." },

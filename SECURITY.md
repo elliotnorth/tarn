@@ -69,8 +69,11 @@ connections go to Let's Encrypt and your DNS provider's API, during issuance and
 renewal. There's no update checker, telemetry or crash reporting.
 
 **Someone on your LAN who isn't on the tailnet.** DNS and HTTPS bind to the tailnet
-IP only by default. A `host=preserve` upstream on a private LAN address isn't
-encrypted between tarn and the app. docs/ADVANCED.md says so.
+IP only by default. With `-source none`, `-listen-extra` or `-proxy-listen`, they also
+bind the addresses you give, and every device that can reach those can use DNS and
+the services. The page still needs sign-in from anywhere but the machine itself. A
+`host=preserve` upstream on a private LAN address isn't encrypted between tarn and
+the app. docs/ADVANCED.md says so.
 
 **A tampered release.** Release checksums are signed with an Ed25519 key that lives
 only in a GitHub Actions secret. The installer checks the signature against

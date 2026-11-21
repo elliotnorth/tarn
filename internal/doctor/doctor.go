@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"slices"
 	"strings"
 	"time"
@@ -47,6 +48,7 @@ type Health struct {
 	} `json:"collisions"`
 	Skipped    []string  `json:"skipped"`
 	SelfHosted bool      `json:"self_hosted"`
+	Mode       *Mode     `json:"mode"`
 	TLS        *TLSState `json:"tls"`
 }
 
@@ -87,6 +89,7 @@ type Env struct {
 	HasTUN     func() bool
 	CheckDNS   func(ctx context.Context, addr, zone string) error // tarn answers on addr
 	PortFree   func(addr string) error                            // addr can be bound
+	Source     string                                             // the device list source from the config, used when tarn isn't running
 	SplitDNS   func(ctx context.Context) (string, error)          // text of `tailscale dns status`
 	Cloudflare func() (Zone, error)                               // nil, nil when no token is configured
 	Reach      func(ctx context.Context, url string) error
@@ -103,6 +106,15 @@ const tunFix = `Tailscale needs /dev/net/tun. In a Proxmox LXC, add these two li
 func Run(ctx context.Context, e *Env) []Result {
 	var out []Result
 	add := func(r Result) { out = append(out, r) }
+
+	health, healthErr := e.Health(ctx)
+	source := e.Source
+	if healthErr == nil && health.Mode != nil {
+		source = health.Mode.Source
+	}
+	if source == "none" {
+		return runWithoutTailscale(ctx, e, health, healthErr)
+	}
 
 	if e.HasTUN() {
 		add(Result{Name: "TUN device", Detail: "/dev/net/tun is present"})
@@ -126,7 +138,6 @@ func Run(ctx context.Context, e *Env) []Result {
 		add(Result{Name: "Tailscale", Detail: detail})
 	}
 
-	health, healthErr := e.Health(ctx)
 	zone := e.Zone
 	switch {
 	case healthErr != nil:
@@ -373,4 +384,70 @@ func hasZone(line, zone string) bool {
 		}
 	}
 	return false
+}
+
+// Mode is /healthz's "mode": where the device list comes from, and every
+// address tarn answers on.
+type Mode struct {
+	Source string   `json:"source"`
+	DNS    []string `json:"dns"`
+	Proxy  []string `json:"proxy"`
+	Answer []string `json:"answer"`
+}
+
+// runWithoutTailscale checks a tarn started with -source none. Tailscale,
+// the TUN device and split DNS aren't used, so they aren't checked.
+func runWithoutTailscale(ctx context.Context, e *Env, health *Health, healthErr error) []Result {
+	out := []Result{{Name: "Tailscale", Detail: "not used (-source none). Names come from the services file and -hosts-file"}}
+	zone := e.Zone
+	const see = "See what's on the port: sudo ss -lunp 'sport = :53'"
+	if healthErr != nil {
+		out = append(out, Result{Name: "tarn", Level: Fail, Detail: "tarn isn't answering on its status port", Fix: "Check: systemctl status tarn, then: journalctl -u tarn -n 30"})
+		if e.Listen != "" {
+			r := Result{Name: "DNS port", Detail: e.Listen + " is free"}
+			if err := e.PortFree(e.Listen); err != nil {
+				r.Level, r.Detail, r.Fix = Fail, fmt.Sprintf("can't use %s: %v", e.Listen, err), see
+			}
+			out = append(out, r)
+		}
+	} else {
+		zone = health.Zone
+		r := Result{Name: "tarn", Detail: fmt.Sprintf("running %s, serving %d names", health.Version, health.Records)}
+		if health.Status != "ok" {
+			r.Level, r.Detail, r.Fix = Fail, fmt.Sprintf("status is %s: %s", health.Status, health.LastError), "Check the hosts file. journalctl -u tarn -n 30 shows the error"
+		}
+		out = append(out, r)
+		var addrs []string
+		if health.Mode != nil {
+			addrs = health.Mode.DNS
+		}
+		for _, a := range addrs {
+			r := Result{Name: "DNS port", Detail: "tarn answers on " + a}
+			if err := e.CheckDNS(ctx, a, zone); err != nil {
+				r.Level, r.Detail, r.Fix = Fail, fmt.Sprintf("tarn isn't answering on %s: %v", a, err), see
+			}
+			out = append(out, r)
+		}
+		host := "tarn's address"
+		if len(addrs) > 0 {
+			if h, _, err := net.SplitHostPort(addrs[0]); err == nil {
+				host = h
+			}
+		}
+		out = append(out, Result{Name: "Split DNS", Detail: fmt.Sprintf(
+			"not checked without Tailscale. The DNS server your devices use must send %s to %s (dnsmasq or Pi-hole: server=/%s/%s)",
+			zone, host, zone, host)})
+		if m := health.Mode; m != nil && len(m.Proxy) > 0 {
+			out = append(out, Result{Name: "Proxy", Detail: fmt.Sprintf("HTTPS on %s; service names point at %s",
+				strings.Join(m.Proxy, ", "), strings.Join(m.Answer, ", "))})
+		}
+		if health.TLS != nil {
+			out = append(out, certificate(e, health.TLS))
+		}
+		out = append(out, upstreams(ctx, e)...)
+	}
+	if r, ok := cloudflare(ctx, e, zone); ok {
+		out = append(out, r)
+	}
+	return append(out, clock(ctx, e))
 }

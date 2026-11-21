@@ -35,6 +35,9 @@ Encrypt and Cloudflare. It uses about 9 MB of RAM.
 
 No public IP, static IP or port forwarding.
 
+No Tailscale? tarn also runs on plain WireGuard or a LAN. See
+[Without Tailscale](docs/ADVANCED.md#without-tailscale-wireguard-or-a-lan).
+
 ## Install
 
 1. In Cloudflare, [create an API token](https://dash.cloudflare.com/profile/api-tokens):
@@ -154,7 +157,7 @@ checked 2026-11-07.
 ## More
 
 - [docs/ADVANCED.md](docs/ADVANCED.md): setting up by hand, nginx or traefik, apps
-  that sign URLs, Headscale details, settings and every option
+  that sign URLs, Headscale, running without Tailscale, settings and every option
 - [SECURITY.md](SECURITY.md): reporting a problem, and what tarn protects against
 
 License: [AGPL-3.0-or-later](LICENSE)

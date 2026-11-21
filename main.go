@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"codeberg.org/miekg/dns"
 	"codeberg.org/miekg/dns/dnsutil"
 
 	"golang.org/x/crypto/bcrypt"
@@ -44,6 +45,10 @@ var refreshMu sync.Mutex
 type config struct {
 	zone         string
 	listen       string
+	listenExtra  string
+	proxyListen  string
+	answer       string
+	hostsFile    string
 	source       string
 	tailscale    string
 	socket       string
@@ -86,7 +91,11 @@ func main() {
 	fs := flag.NewFlagSet("tarn", flag.ExitOnError)
 	fs.StringVar(&c.zone, "zone", "", "DNS zone to serve, e.g. t.example.com (required)")
 	fs.StringVar(&c.listen, "listen", "", "DNS listen address (default: this node's tailnet IPv4, port 53)")
-	fs.StringVar(&c.source, "source", "cli", `where to read the peer list: "cli" (tailscale status --json) or "localapi" (tailscaled socket)`)
+	fs.StringVar(&c.source, "source", "cli", `where to read the device list: "cli" (tailscale status --json), "localapi" (tailscaled socket), or "none" to run without Tailscale`)
+	fs.StringVar(&c.listenExtra, "listen-extra", "", `more DNS addresses to answer on as well as -listen, comma-separated; "tailnet" is this node's tailnet IP`)
+	fs.StringVar(&c.proxyListen, "proxy-listen", "", `HTTPS proxy addresses, comma-separated (default: this node's tailnet IPv4, port 443; "tailnet" names it in a list)`)
+	fs.StringVar(&c.answer, "answer", "", "IPv4 addresses, comma-separated, that service names resolve to (default: this node's tailnet IPv4)")
+	fs.StringVar(&c.hostsFile, "hosts-file", "", `file of "name address..." lines to answer as devices, re-read on every refresh`)
 	fs.StringVar(&c.tailscale, "tailscale", "tailscale", "path to the tailscale binary (source=cli)")
 	fs.StringVar(&c.socket, "socket", peers.DefaultSocket, "tailscaled LocalAPI socket (source=localapi)")
 	fs.DurationVar(&c.interval, "interval", 30*time.Second, "peer list refresh interval")
@@ -143,6 +152,10 @@ func resolveConfig(c *config) (file settings.Values, exists bool, err error) {
 	take("acme-staging", func() { c.acmeStaging = file.ACMEStaging })
 	take("services-file", func() { c.servicesFile = file.ServicesFile })
 	take("export-dir", func() { c.exportDir = file.ExportDir })
+	take("listen-extra", func() { c.listenExtra = file.ListenExtra })
+	take("proxy-listen", func() { c.proxyListen = file.ProxyListen })
+	take("answer", func() { c.answer = file.Answer })
+	take("hosts-file", func() { c.hostsFile = file.HostsFile })
 	return file, true, nil
 }
 
@@ -238,19 +251,25 @@ func run(c config, log *slog.Logger) error {
 		}
 	}
 
-	sourceFor := func(name string) peers.Source {
-		if name == "localapi" {
-			return peers.LocalAPI{Socket: c.socket}
-		}
-		return peers.CLI{Path: c.tailscale}
+	answer, err := checkNoTailscale(c, svc != nil)
+	if err != nil {
+		return err
 	}
-	if c.source != "cli" && c.source != "localapi" {
-		return fmt.Errorf(`-source must be "cli" or "localapi", not %q`, c.source)
+	sourceFor := func(name string) peers.Source {
+		var s peers.Source = peers.CLI{Path: c.tailscale}
+		switch name {
+		case "localapi":
+			s = peers.LocalAPI{Socket: c.socket}
+		case "none":
+			s = peers.None{}
+		}
+		return peers.Extras{Source: s, HostsFile: c.hostsFile, Answer: answer}
 	}
 
 	values := settings.Values{
 		Zone: zone, Listen: c.listen, Source: c.source, IntervalSeconds: int(c.interval / time.Second), TTL: uint32(c.ttl),
 		ACMEEmail: c.acmeEmail, ACMEStaging: c.acmeStaging, ServicesFile: c.servicesFile, ExportDir: c.exportDir,
+		ListenExtra: c.listenExtra, ProxyListen: c.proxyListen, Answer: c.answer, HostsFile: c.hostsFile,
 		RecordsTokenSHA256: file.RecordsTokenSHA256, AdminPasswordHash: file.AdminPasswordHash,
 	}
 	if c.configPath != "" && !configExists {
@@ -313,12 +332,19 @@ func run(c config, log *slog.Logger) error {
 	if listen == "" {
 		listen = rt.selfListen
 	}
-	var proxyAddr string
+	var proxyAddrs, extraDNS []string
 	if svc != nil {
-		if proxyAddr, err = selfAddr(st, "443"); err != nil {
+		if proxyAddrs, err = listenList("-proxy-listen", c.proxyListen, "443", st); err != nil {
 			return err
 		}
 	}
+	if c.listenExtra != "" {
+		if extraDNS, err = listenList("-listen-extra", c.listenExtra, "53", st); err != nil {
+			return err
+		}
+	}
+	// An address on the tailnet IP goes stale if that IP changes.
+	rt.tailnetBound = (svc != nil && (c.proxyListen == "" || usesTailnet(c.proxyListen))) || usesTailnet(c.listenExtra)
 	go func() {
 		if err := refreshLoop(ctx, &rt.src, store, log, rt.intervalNow, rt.wake, rt.watched, rt.names); err != nil {
 			rt.errc <- err
@@ -330,6 +356,11 @@ func run(c config, log *slog.Logger) error {
 		Version: version, Zone: zone, ZoneNow: rt.zoneNow, Log: log, AdminWarning: adminWarning,
 		DNS:     func() any { return stats.Snapshot() },
 		Metrics: c.metrics,
+		Mode: func() any {
+			rt.mu.Lock()
+			defer rt.mu.Unlock()
+			return mode{Source: rt.v.Source, DNS: append([]string{rt.listenAddr}, extraDNS...), Proxy: proxyAddrs, Answer: answer}
+		},
 	}
 	watch := newSplitDNSWatch(c.tailscale, rt.zoneNow, store, log)
 	go watch.run(ctx, 5*time.Minute)
@@ -373,15 +404,27 @@ func run(c config, log *slog.Logger) error {
 	rt.mu.Lock()
 	rt.ds, rt.listenAddr = ds, listen
 	rt.mu.Unlock()
-	log.Info("tarn started", "version", version, "zone", zone, "dns", listen, "mgmt", c.mgmt, "source", c.source, "config", c.configPath)
+	var extraServers []*dns.Server
+	for _, a := range extraDNS {
+		es, err := rt.startDNS(a)
+		if err != nil {
+			rt.stopDNS(ds)
+			for _, s := range extraServers {
+				rt.stopDNS(s)
+			}
+			return err
+		}
+		extraServers = append(extraServers, es)
+	}
+	log.Info("tarn started", "version", version, "zone", zone, "dns", strings.Join(append([]string{listen}, extraDNS...), ","), "mgmt", c.mgmt, "source", c.source, "config", c.configPath)
 
 	// Issuance runs beside DNS and never stops it: a failure here must not
 	// take names down, or cause a restart loop that hits CA rate limits.
-	var ps *http.Server
-	if cfToken != "" {
-		if svc != nil {
-			ps = &http.Server{
-				Addr:              proxyAddr,
+	var proxies []*http.Server
+	if cfToken != "" && svc != nil {
+		for _, addr := range proxyAddrs {
+			ps := &http.Server{
+				Addr:              addr,
 				Handler:           svc.Router(),
 				TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12, GetCertificate: rt.certs.GetCertificate},
 				ReadHeaderTimeout: 10 * time.Second,
@@ -389,11 +432,12 @@ func run(c config, log *slog.Logger) error {
 			}
 			go func() {
 				if err := ps.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
-					rt.errc <- fmt.Errorf("proxy on %s: %w", proxyAddr, err)
+					rt.errc <- fmt.Errorf("proxy on %s: %w", addr, err)
 				}
 			}()
-			log.Info("proxy started", "addr", proxyAddr, "services", len(svc.Names()), "editable", adminOn)
+			proxies = append(proxies, ps)
 		}
+		log.Info("proxy started", "addr", strings.Join(proxyAddrs, ","), "services", len(svc.Names()), "editable", adminOn)
 	}
 
 	select {
@@ -404,8 +448,11 @@ func run(c config, log *slog.Logger) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	hs.Shutdown(shutdownCtx)
-	if ps != nil {
+	for _, ps := range proxies {
 		ps.Shutdown(shutdownCtx)
+	}
+	for _, s := range extraServers {
+		rt.stopDNS(s)
 	}
 	rt.mu.Lock()
 	cur := rt.ds

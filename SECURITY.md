@@ -70,7 +70,7 @@ renewal. There's no update checker, telemetry or crash reporting.
 
 **Someone on your LAN who isn't on the tailnet.** DNS and HTTPS bind to the tailnet
 IP only by default. A `host=preserve` upstream on a private LAN address isn't
-encrypted between tarn and the app. The README says so.
+encrypted between tarn and the app. docs/ADVANCED.md says so.
 
 **A tampered release.** Release checksums are signed with an Ed25519 key that lives
 only in a GitHub Actions secret. The installer checks the signature against
@@ -107,8 +107,8 @@ chooses that path.
 
 - **Wildcard key:** stop tarn, delete `cert.pem` and `key.pem` under
   `production/zones/<zone>/` in the state directory, and start it again. tarn
-  issues a new certificate with a new key, within its limit of 4 a week. tarn
-  can't revoke yet, so revoke the old certificate with an ACME client such as
+  issues a new certificate with a new key, within its limit of 4 a week. Revoke
+  the old certificate with an ACME client such as
   `lego` and the account key in `production/account.key`.
 - **Cloudflare token:** roll it in the Cloudflare dashboard, update the credential
   file, and restart tarn.

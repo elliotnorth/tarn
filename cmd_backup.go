@@ -17,8 +17,8 @@ import (
 	"github.com/elliotnorth/tarn/internal/settings"
 )
 
-// servicesFlag finds -services-file in the systemd unit, where the README's
-// setup puts it.
+// servicesFlag finds -services-file in the systemd unit, where manual setup
+// puts it.
 var servicesFlag = regexp.MustCompile(`(?m)^ExecStart=.*\s-{1,2}services-file[= ](\S+)`)
 
 // servicesPath works out where the services file is: the flag, then the

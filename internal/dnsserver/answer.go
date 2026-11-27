@@ -49,8 +49,7 @@ func (r *Responder) zone() string { return strings.ToLower(dnsutil.Fqdn(r.Zone))
 //	no peer list loaded yet              SERVFAIL
 //	not a query, or not one question     NOTIMP / FORMERR
 func (r *Responder) Reply(req *dns.Msg) (*dns.Msg, Outcome) {
-	m := new(dns.Msg)
-	dnsutil.SetReply(m, req)
+	m := replyTo(req)
 	if req.UDPSize > 0 {
 		m.UDPSize = ednsSize
 	}
@@ -153,4 +152,23 @@ func (r *Responder) soa(idx *index.Index) dns.RR {
 func (r *Responder) ns() dns.RR {
 	zone := r.zone()
 	return &dns.NS{Hdr: dns.Header{Name: zone, TTL: r.TTL, Class: dns.ClassINET}, NS: rdata.NS{Ns: zone}}
+}
+
+// replyTo starts the reply to req: the ID, opcode and question are copied, and
+// for a query so are the RecursionDesired, CheckingDisabled and DO bits. It is
+// tarn's own because dnsutil.SetReply now turns the request itself into the
+// reply, and Reply still reads req after building m.
+func replyTo(req *dns.Msg) *dns.Msg {
+	m := new(dns.Msg)
+	m.ID = req.ID
+	m.Response = true
+	m.Opcode = req.Opcode
+	if m.Opcode == dns.OpcodeQuery {
+		m.RecursionDesired = req.RecursionDesired
+		m.CheckingDisabled = req.CheckingDisabled
+		m.Security = req.Security
+	}
+	m.Rcode = dns.RcodeSuccess
+	m.Question = req.Question
+	return m
 }

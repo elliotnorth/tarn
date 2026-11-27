@@ -12,9 +12,9 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           # The latest patch release, not go.mod's minimum: go.mod says 1.27.0,
           # and govulncheck fails on that version's standard-library bugs.
